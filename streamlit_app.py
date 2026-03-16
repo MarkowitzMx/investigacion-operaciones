@@ -1,6 +1,50 @@
 import streamlit as st
 
-st.title("🎈 My new app")
-st.write(
-    "Let's start building! For help and inspiration, head over to [docs.streamlit.io](https://docs.streamlit.io/)."
+st.set_page_config(
+    page_title="Investigación de Operaciones",
+    page_icon="📊",
+    layout="wide"
 )
+
+st.title("📊 Plataforma de Investigación de Operaciones")
+
+st.write(
+"""
+Bienvenido a la aplicación interactiva para aprender **Investigación de Operaciones**.
+
+En esta plataforma podrás explorar:
+
+- 📈 Método gráfico
+- 🔢 Método Simplex
+- 🔗 Redes de transporte
+- 📅 PERT / CPM
+"""
+)
+
+st.sidebar.title("Menú")
+
+opcion = st.sidebar.selectbox(
+    "Selecciona un método",
+    [
+        "Inicio",
+        "Método gráfico",
+        "Método Simplex",
+        "Transporte",
+        "PERT / CPM"
+    ]
+)
+
+if opcion == "Inicio":
+    st.success("Selecciona un método en el menú.")
+
+elif opcion == "Método gráfico":
+    st.header("Método gráfico para programación lineal")
+
+elif opcion == "Método Simplex":
+    st.header("Método Simplex")
+
+elif opcion == "Transporte":
+    st.header("Problema de transporte")
+
+elif opcion == "PERT / CPM":
+    st.header("Análisis PERT / CPM")
