@@ -1,6 +1,3 @@
-
-Copy
-
 """
 Biblioteca de Ejemplos Predefinidos
 """
