@@ -201,7 +201,16 @@ def show_home():
             with st.expander(f"📖 {module_name}"):
                 for topic in topics:
                     st.markdown(f"- {topic}")
- 
+      # ── Logos institucionales ──────────────
+        st.markdown("---")
+        st.markdown("#### 🏫 Instituciones")
+        logo1, logo2, logo3 = st.columns(3)
+        with logo1:
+            st.image("assets/logo1.jpg", width=130, caption="UAS")
+        with logo2:
+            st.image("assets/logo2.jpg", width=130, caption="Facultad de Ingeniería")
+        with logo3:
+            st.image("assets/logo3.png", width=130, caption="UAS 2029")
     with col2:
         st.markdown("## 🚀 Comenzar")
         st.info("**Pasos rápidos:**\n1. Selecciona un módulo del menú\n2. Ingresa tus datos\n3. ¡Resuelve!")
@@ -229,10 +238,7 @@ def main():
  
     # Sidebar
     with st.sidebar:
-        st.image(
-            "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/UAS_Logo.svg/1200px-UAS_Logo.svg.png",
-            width=150
-        )
+       
         st.markdown("## 🎯 Módulos")
         module = st.radio("Selecciona un módulo:", [
             "🏠 Inicio",
