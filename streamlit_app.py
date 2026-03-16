@@ -5,12 +5,11 @@ Aplicación Web Completa con Streamlit
 import streamlit as st
 import numpy as np
 import pandas as pd
-import sys
 from datetime import datetime
 import json
  
 # Configurar path
-sys.path.append('/home/claude/investigacion-operaciones')
+
  
 from modules.linear_programming import LinearProgrammingModule
 from modules.network_analysis import (TransportationProblem, AssignmentProblem, 
@@ -426,4 +425,8 @@ def show_lp_results():
  
  
 if __name__ == "__main__":
+<<<<<<< HEAD
     main()
+=======
+    main()
+>>>>>>> 5af850f (update app structure and dependencies)
