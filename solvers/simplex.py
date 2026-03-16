@@ -367,6 +367,9 @@ class TwoPhaseSimplexSolver:
         all_var_names = var_names + slack_names
  
         # Construir fila objetivo Fase 2
+        # Internamente siempre minimizamos:
+        # - maximizar: negamos c
+        # - minimizar: usamos c directamente
         if maximize:
             c_phase2 = -c.copy()
         else:
@@ -387,11 +390,15 @@ class TwoPhaseSimplexSolver:
         iteration = 1
         status = "optimal"
         while True:
-            if np.all(T[-1, :-1] >= -1e-10):
+            # Solo revisar optimalidad en variables originales (0..n-1)
+            # Las variables de exceso/holgura pueden tener coeficientes
+            # negativos espurios que no indican mejora real
+            obj_row = T[-1, :n]
+            if np.all(obj_row >= -1e-10):
                 status = "optimal"
                 break
  
-            entering = int(np.argmin(T[-1, :-1]))
+            entering = int(np.argmin(obj_row))
             leaving  = self._min_ratio(T, entering)
  
             if leaving is None:
@@ -420,9 +427,13 @@ class TwoPhaseSimplexSolver:
             if bi < n:
                 solution[var_names[bi]] = T[i, -1]
  
-        opt_val = T[-1, -1]
+        # Signo del valor óptimo:
+        # - Minimizar: c directo,  T[-1,-1] = -Z*  → opt = -T[-1,-1]
+        # - Maximizar: c negado,   T[-1,-1] = +Z*  → opt =  T[-1,-1]
         if maximize:
-            opt_val = -opt_val
+            opt_val = T[-1, -1]
+        else:
+            opt_val = -T[-1, -1]
  
         return {
             'status': 'optimal',
@@ -472,4 +483,3 @@ class TwoPhaseSimplexSolver:
             'basis':       basis.copy(),
             'var_names':   var_names.copy()
         })
- 
