@@ -4,122 +4,90 @@ Solver del Método Simplex con seguimiento detallado de iteraciones
 import numpy as np
 from typing import Dict, List, Tuple, Optional
 import copy
-
+ 
+ 
 class SimplexSolver:
     def __init__(self):
         self.iterations = []
         self.optimal_solution = None
         self.optimal_value = None
         self.status = None
-        
-    def solve(self, c: np.ndarray, A: np.ndarray, b: np.ndarray, 
+ 
+    def solve(self, c: np.ndarray, A: np.ndarray, b: np.ndarray,
               maximize: bool = True, var_names: List[str] = None,
               constraint_types: List[str] = None) -> Dict:
-        """
-        Resuelve un problema de programación lineal usando el método Simplex
-        
-        Args:
-            c: Coeficientes de la función objetivo
-            A: Matriz de coeficientes de restricciones
-            b: Vector del lado derecho de restricciones
-            maximize: True para maximizar, False para minimizar
-            var_names: Nombres de las variables
-            constraint_types: Lista de tipos de restricción ('<=', '>=', '=')
-        
-        Returns:
-            Diccionario con la solución y detalles del proceso
-        """
         self.iterations = []
-        
-        # Convertir a minimización si es necesario
+ 
         if maximize:
             c = -c.copy()
         else:
             c = c.copy()
-            
-        # Preparar nombres de variables
+ 
         if var_names is None:
             var_names = [f"x{i+1}" for i in range(len(c))]
-        
-        # Convertir restricciones a forma estándar
+ 
         tableau, basis, var_names_extended = self._convert_to_standard_form(
             c, A, b, var_names, constraint_types
         )
-        
-        # Guardar tableau inicial
+ 
         self._record_iteration(tableau, basis, var_names_extended, 0, "Tableau Inicial")
-        
+ 
         iteration = 1
         while True:
-            # Verificar optimalidad
             if self._is_optimal(tableau):
                 self.status = "optimal"
                 break
-                
-            # Verificar si no está acotado
+ 
             entering_col = self._get_entering_variable(tableau)
             if entering_col is None:
                 self.status = "unbounded"
                 break
-                
-            # Obtener variable que sale
+ 
             leaving_row = self._get_leaving_variable(tableau, entering_col)
             if leaving_row is None:
                 self.status = "unbounded"
                 break
-            
-            # Realizar pivoteo
+ 
+            prev_leaving = basis[leaving_row]
             tableau = self._pivot(tableau, leaving_row, entering_col)
             basis[leaving_row] = entering_col
-            
-            # Registrar iteración
+ 
             self._record_iteration(
                 tableau, basis, var_names_extended, iteration,
                 f"Entra: {var_names_extended[entering_col]}, "
-                f"Sale: {var_names_extended[basis[leaving_row] if leaving_row < len(basis) else 0]}"
+                f"Sale: {var_names_extended[prev_leaving]}"
             )
-            
+ 
             iteration += 1
-            
-            # Seguridad: máximo 100 iteraciones
             if iteration > 100:
                 self.status = "max_iterations"
                 break
-        
-        # Extraer solución
+ 
         solution = self._extract_solution(tableau, basis, len(c), var_names)
-        
-        # Ajustar valor objetivo si era maximización
+ 
         if maximize:
             solution['optimal_value'] = -solution['optimal_value']
-        
+ 
         solution['status'] = self.status
         solution['iterations'] = self.iterations
         solution['num_iterations'] = len(self.iterations) - 1
-        
+ 
         return solution
-    
-    def _convert_to_standard_form(self, c: np.ndarray, A: np.ndarray, 
-                                   b: np.ndarray, var_names: List[str],
-                                   constraint_types: List[str]) -> Tuple:
-        """Convierte el problema a forma estándar"""
+ 
+    def _convert_to_standard_form(self, c, A, b, var_names, constraint_types):
         m, n = A.shape
-        
-        # Si no se especifican tipos, asumir todas <=
+ 
         if constraint_types is None:
             constraint_types = ['<='] * m
-        
-        # Contar variables de holgura/exceso necesarias
+ 
         num_slack = sum(1 for ct in constraint_types if ct in ['<=', '>='])
-        
-        # Crear matriz ampliada
+ 
         A_extended = np.zeros((m, n + num_slack))
         A_extended[:, :n] = A
-        
-        # Agregar variables de holgura/exceso
+ 
         slack_idx = n
         extended_var_names = var_names.copy()
-        
+ 
         for i, ct in enumerate(constraint_types):
             if ct == '<=':
                 A_extended[i, slack_idx] = 1
@@ -129,91 +97,67 @@ class SimplexSolver:
                 A_extended[i, slack_idx] = -1
                 extended_var_names.append(f"e{slack_idx - n + 1}")
                 slack_idx += 1
-        
-        # Crear tableau
+ 
         tableau = np.zeros((m + 1, n + num_slack + 1))
         tableau[:-1, :-1] = A_extended
         tableau[:-1, -1] = b
         tableau[-1, :n] = c
-        
-        # Base inicial (variables de holgura)
+ 
         basis = list(range(n, n + num_slack))
-        
+ 
         return tableau, basis, extended_var_names
-    
-    def _is_optimal(self, tableau: np.ndarray) -> bool:
-        """Verifica si el tableau actual es óptimo"""
-        # Para minimización: todos los coeficientes de la fila objetivo deben ser >= 0
+ 
+    def _is_optimal(self, tableau):
         return np.all(tableau[-1, :-1] >= -1e-10)
-    
-    def _get_entering_variable(self, tableau: np.ndarray) -> Optional[int]:
-        """Selecciona la variable que entra (columna pivote)"""
-        # Regla: columna con el coeficiente más negativo
+ 
+    def _get_entering_variable(self, tableau):
         obj_row = tableau[-1, :-1]
         min_val = np.min(obj_row)
-        
         if min_val >= -1e-10:
             return None
-            
-        return np.argmin(obj_row)
-    
-    def _get_leaving_variable(self, tableau: np.ndarray, entering_col: int) -> Optional[int]:
-        """Selecciona la variable que sale (fila pivote)"""
+        return int(np.argmin(obj_row))
+ 
+    def _get_leaving_variable(self, tableau, entering_col):
         m = tableau.shape[0] - 1
         ratios = []
-        
+ 
         for i in range(m):
             if tableau[i, entering_col] > 1e-10:
                 ratio = tableau[i, -1] / tableau[i, entering_col]
                 ratios.append((ratio, i))
-            else:
-                ratios.append((float('inf'), i))
-        
-        # Filtrar ratios negativos
-        valid_ratios = [(r, i) for r, i in ratios if r >= 0]
-        
-        if not valid_ratios:
+ 
+        if not ratios:
             return None
-        
-        # Seleccionar mínimo ratio
-        return min(valid_ratios, key=lambda x: x[0])[1]
-    
-    def _pivot(self, tableau: np.ndarray, pivot_row: int, pivot_col: int) -> np.ndarray:
-        """Realiza operación de pivoteo"""
+ 
+        return min(ratios, key=lambda x: x[0])[1]
+ 
+    def _pivot(self, tableau, pivot_row, pivot_col):
         tableau = tableau.copy()
-        
-        # Normalizar fila pivote
         pivot_element = tableau[pivot_row, pivot_col]
         tableau[pivot_row, :] /= pivot_element
-        
-        # Eliminar elementos en la columna pivote
+ 
         for i in range(tableau.shape[0]):
             if i != pivot_row:
                 factor = tableau[i, pivot_col]
                 tableau[i, :] -= factor * tableau[pivot_row, :]
-        
+ 
         return tableau
-    
-    def _extract_solution(self, tableau: np.ndarray, basis: List[int], 
-                         num_original_vars: int, var_names: List[str]) -> Dict:
-        """Extrae la solución del tableau final"""
+ 
+    def _extract_solution(self, tableau, basis, num_original_vars, var_names):
         solution_dict = {name: 0.0 for name in var_names}
-        
-        # Variables básicas
+ 
         for i, var_idx in enumerate(basis):
             if var_idx < num_original_vars:
                 solution_dict[var_names[var_idx]] = tableau[i, -1]
-        
+ 
         optimal_value = tableau[-1, -1]
-        
+ 
         return {
             'variables': solution_dict,
             'optimal_value': optimal_value
         }
-    
-    def _record_iteration(self, tableau: np.ndarray, basis: List[int], 
-                         var_names: List[str], iteration: int, description: str):
-        """Registra una iteración para visualización posterior"""
+ 
+    def _record_iteration(self, tableau, basis, var_names, iteration, description):
         self.iterations.append({
             'iteration': iteration,
             'description': description,
@@ -221,71 +165,311 @@ class SimplexSolver:
             'basis': basis.copy(),
             'var_names': var_names.copy()
         })
-
-
+ 
+ 
+# ─────────────────────────────────────────────────────────────────────────────
+# MÉTODO DE LAS DOS FASES — IMPLEMENTACIÓN COMPLETA
+# ─────────────────────────────────────────────────────────────────────────────
 class TwoPhaseSimplexSolver:
-    """Solver del Método de las Dos Fases"""
-    
+    """Solver del Método de las Dos Fases — implementación completa"""
+ 
     def __init__(self):
         self.phase1_iterations = []
         self.phase2_iterations = []
         self.status = None
-        
+ 
+    # ── API pública ──────────────────────────────────────────────────────────
     def solve(self, c: np.ndarray, A: np.ndarray, b: np.ndarray,
               maximize: bool = True, var_names: List[str] = None,
               constraint_types: List[str] = None) -> Dict:
-        """
-        Resuelve usando el método de las dos fases
-        """
-        
-        # FASE 1: Encontrar solución básica factible
-        phase1_result = self._phase1(A, b, constraint_types)
-        
+ 
+        self.phase1_iterations = []
+        self.phase2_iterations = []
+ 
+        m, n = A.shape
+ 
+        if var_names is None:
+            var_names = [f"x{i+1}" for i in range(n)]
+        if constraint_types is None:
+            constraint_types = ['<='] * m
+ 
+        # Asegurar b >= 0 (multiplicar filas negativas por -1)
+        A, b, constraint_types = self._ensure_nonneg_rhs(A, b, constraint_types)
+ 
+        # ── FASE 1 ───────────────────────────────────────────────────────────
+        phase1_result = self._phase1(A, b, constraint_types, var_names, n, m)
+ 
         if phase1_result['status'] != 'feasible':
             return {
                 'status': 'infeasible',
-                'message': 'No existe solución factible',
-                'phase1_iterations': self.phase1_iterations
+                'message': 'No existe solución básica factible (Fase 1 no alcanzó Z=0)',
+                'phase1_iterations': self.phase1_iterations,
+                'phase2_iterations': []
             }
-        
-        # FASE 2: Optimizar con la función objetivo original
+ 
+        # ── FASE 2 ───────────────────────────────────────────────────────────
         phase2_result = self._phase2(
-            c, phase1_result['tableau'], 
-            phase1_result['basis'], maximize, var_names
+            c, A, b, maximize, var_names, constraint_types,
+            phase1_result['basis'], phase1_result['tableau'], n, m
         )
-        
+ 
         return {
-            'status': 'optimal',
-            'variables': phase2_result['variables'],
-            'optimal_value': phase2_result['optimal_value'],
+            'status': phase2_result['status'],
+            'variables': phase2_result.get('variables', {}),
+            'optimal_value': phase2_result.get('optimal_value', 0.0),
             'phase1_iterations': self.phase1_iterations,
             'phase2_iterations': self.phase2_iterations,
-            'total_iterations': len(self.phase1_iterations) + len(self.phase2_iterations)
+            'num_phase1': len(self.phase1_iterations) - 1,
+            'num_phase2': len(self.phase2_iterations) - 1,
+            'total_iterations': (
+                max(0, len(self.phase1_iterations) - 1) +
+                max(0, len(self.phase2_iterations) - 1)
+            ),
+            'method': 'Método de las Dos Fases'
         }
-    
-    def _phase1(self, A: np.ndarray, b: np.ndarray, 
-                constraint_types: List[str]) -> Dict:
-        """Fase 1: Encontrar solución básica factible"""
-        m, n = A.shape
-        
-        # Crear problema artificial minimizando suma de variables artificiales
-        # (Implementación simplificada)
-        
+ 
+    # ── Fase 1 ───────────────────────────────────────────────────────────────
+    def _phase1(self, A, b, constraint_types, var_names, n, m):
+        """
+        Construye tableau con variables artificiales y minimiza su suma.
+        Si el óptimo es 0, existe SBF.
+        """
+        # Número de variables de holgura/exceso
+        num_slack = sum(1 for ct in constraint_types if ct in ['<=', '>='])
+        # Variables artificiales para restricciones >= y =
+        artificial_rows = [i for i, ct in enumerate(constraint_types) if ct in ['>=', '=']]
+        num_art = len(artificial_rows)
+ 
+        total_cols = n + num_slack + num_art  # sin RHS
+ 
+        # Construir A extendida con holguras
+        A_ext = np.zeros((m, n + num_slack))
+        A_ext[:, :n] = A
+        slack_idx = n
+        slack_names = []
+        for i, ct in enumerate(constraint_types):
+            if ct == '<=':
+                A_ext[i, slack_idx] = 1
+                slack_names.append(f"s{slack_idx - n + 1}")
+                slack_idx += 1
+            elif ct == '>=':
+                A_ext[i, slack_idx] = -1
+                slack_names.append(f"e{slack_idx - n + 1}")
+                slack_idx += 1
+ 
+        # Agregar columnas de variables artificiales
+        A_full = np.zeros((m, total_cols))
+        A_full[:, :n + num_slack] = A_ext
+        art_names = []
+        basis = [-1] * m
+ 
+        # Asignar base inicial: holguras para <=, artificiales para >= y =
+        slack_ptr = n
+        art_ptr = n + num_slack
+        basis_slack = {}  # row -> slack col para <=
+ 
+        for i, ct in enumerate(constraint_types):
+            if ct == '<=':
+                basis[i] = slack_ptr
+                slack_ptr += 1
+            elif ct == '>=':
+                A_full[i, art_ptr] = 1
+                art_names.append(f"a{len(art_names)+1}")
+                basis[i] = art_ptr
+                art_ptr += 1
+            elif ct == '=':
+                A_full[i, art_ptr] = 1
+                art_names.append(f"a{len(art_names)+1}")
+                basis[i] = art_ptr
+                art_ptr += 1
+ 
+        all_var_names = var_names + slack_names + art_names
+ 
+        # Función objetivo Fase 1: minimizar sum(artificiales)
+        # Fila Z = sum de filas con artificiales en base (para eliminar artificiales)
+        tableau = np.zeros((m + 1, total_cols + 1))
+        tableau[:m, :total_cols] = A_full
+        tableau[:m, -1] = b
+ 
+        # Fila objetivo: coeficiente 1 para artificiales
+        for j in range(n + num_slack, total_cols):
+            tableau[-1, j] = 1.0
+ 
+        # Eliminar artificiales de la fila objetivo (ya están en base)
+        for i, bi in enumerate(basis):
+            if bi >= n + num_slack:  # es artificial
+                tableau[-1, :] -= tableau[i, :]
+ 
+        self._record_phase(self.phase1_iterations, tableau, basis, all_var_names,
+                           0, "Tableau Inicial — Fase 1")
+ 
+        # Iterar simplex minimizando
+        iteration = 1
+        while True:
+            if np.all(tableau[-1, :-1] >= -1e-10):
+                break
+ 
+            entering = int(np.argmin(tableau[-1, :-1]))
+            leaving = self._min_ratio(tableau, entering)
+ 
+            if leaving is None:
+                self.status = "unbounded"
+                return {'status': 'unbounded'}
+ 
+            prev = basis[leaving]
+            tableau = self._pivot_op(tableau, leaving, entering)
+            basis[leaving] = entering
+ 
+            self._record_phase(self.phase1_iterations, tableau, basis, all_var_names,
+                               iteration,
+                               f"Entra: {all_var_names[entering]}, "
+                               f"Sale: {all_var_names[prev]}")
+            iteration += 1
+            if iteration > 200:
+                break
+ 
+        # Verificar factibilidad: Z fase1 debe ser ~0
+        z1 = abs(tableau[-1, -1])
+        if z1 > 1e-6:
+            return {'status': 'infeasible'}
+ 
         return {
             'status': 'feasible',
-            'tableau': np.zeros((m + 1, n + m + 1)),
-            'basis': list(range(n, n + m))
+            'tableau': tableau,
+            'basis': basis,
+            'all_var_names': all_var_names,
+            'num_slack': num_slack,
+            'num_art': num_art
         }
-    
-    def _phase2(self, c: np.ndarray, tableau: np.ndarray, 
-                basis: List[int], maximize: bool, var_names: List[str]) -> Dict:
-        """Fase 2: Optimizar con función objetivo original"""
-        
-        # Usar SimplexSolver estándar
-        solver = SimplexSolver()
-        # (Implementación completa)
-        
+ 
+    # ── Fase 2 ───────────────────────────────────────────────────────────────
+    def _phase2(self, c, A, b, maximize, var_names, constraint_types,
+                basis, tableau_p1, n, m):
+        """
+        Toma el tableau final de Fase 1, elimina columnas artificiales
+        y optimiza con la función objetivo original.
+        """
+        num_slack = sum(1 for ct in constraint_types if ct in ['<=', '>='])
+        num_art   = sum(1 for ct in constraint_types if ct in ['>=', '='])
+        total_orig = n + num_slack  # columnas sin artificiales
+ 
+        # Reconstruir tableau sin columnas artificiales
+        # Filas de restricciones: tomar solo columnas originales + RHS
+        T = np.zeros((m + 1, total_orig + 1))
+        T[:m, :total_orig] = tableau_p1[:m, :total_orig]
+        T[:m, -1]          = tableau_p1[:m, -1]
+ 
+        # Nombre de variables (sin artificiales)
+        slack_names = []
+        for i, ct in enumerate(constraint_types):
+            if ct in ['<=', '>=']:
+                slack_names.append(f"s{len(slack_names)+1}" if ct == '<=' else f"e{len(slack_names)+1}")
+        all_var_names = var_names + slack_names
+ 
+        # Construir fila objetivo Fase 2
+        if maximize:
+            c_phase2 = -c.copy()
+        else:
+            c_phase2 = c.copy()
+ 
+        T[-1, :n] = c_phase2
+        T[-1, n:total_orig] = 0.0
+        T[-1, -1] = 0.0
+ 
+        # Eliminar variables básicas de la fila objetivo
+        for i, bi in enumerate(basis):
+            if bi < total_orig and abs(T[-1, bi]) > 1e-10:
+                T[-1, :] -= T[-1, bi] * T[i, :]
+ 
+        self._record_phase(self.phase2_iterations, T, basis, all_var_names,
+                           0, "Tableau Inicial — Fase 2")
+ 
+        iteration = 1
+        status = "optimal"
+        while True:
+            if np.all(T[-1, :-1] >= -1e-10):
+                status = "optimal"
+                break
+ 
+            entering = int(np.argmin(T[-1, :-1]))
+            leaving  = self._min_ratio(T, entering)
+ 
+            if leaving is None:
+                status = "unbounded"
+                break
+ 
+            prev = basis[leaving]
+            T = self._pivot_op(T, leaving, entering)
+            basis[leaving] = entering
+ 
+            self._record_phase(self.phase2_iterations, T, basis, all_var_names,
+                               iteration,
+                               f"Entra: {all_var_names[entering]}, "
+                               f"Sale: {all_var_names[prev]}")
+            iteration += 1
+            if iteration > 200:
+                status = "max_iterations"
+                break
+ 
+        if status != "optimal":
+            return {'status': status}
+ 
+        # Extraer solución
+        solution = {name: 0.0 for name in var_names}
+        for i, bi in enumerate(basis):
+            if bi < n:
+                solution[var_names[bi]] = T[i, -1]
+ 
+        opt_val = T[-1, -1]
+        if maximize:
+            opt_val = -opt_val
+ 
         return {
-            'variables': {},
-            'optimal_value': 0.0
+            'status': 'optimal',
+            'variables': solution,
+            'optimal_value': opt_val
         }
+ 
+    # ── Utilidades internas ──────────────────────────────────────────────────
+    def _ensure_nonneg_rhs(self, A, b, constraint_types):
+        A = A.copy().astype(float)
+        b = b.copy().astype(float)
+        ct = list(constraint_types)
+        for i in range(len(b)):
+            if b[i] < 0:
+                A[i, :] *= -1
+                b[i]    *= -1
+                if ct[i] == '<=':
+                    ct[i] = '>='
+                elif ct[i] == '>=':
+                    ct[i] = '<='
+        return A, b, ct
+ 
+    def _min_ratio(self, tableau, entering_col):
+        m = tableau.shape[0] - 1
+        ratios = []
+        for i in range(m):
+            if tableau[i, entering_col] > 1e-10:
+                ratios.append((tableau[i, -1] / tableau[i, entering_col], i))
+        if not ratios:
+            return None
+        return min(ratios, key=lambda x: x[0])[1]
+ 
+    def _pivot_op(self, tableau, pivot_row, pivot_col):
+        T = tableau.copy()
+        T[pivot_row, :] /= T[pivot_row, pivot_col]
+        for i in range(T.shape[0]):
+            if i != pivot_row:
+                T[i, :] -= T[i, pivot_col] * T[pivot_row, :]
+        return T
+ 
+    def _record_phase(self, iterations_list, tableau, basis, var_names,
+                      iteration, description):
+        iterations_list.append({
+            'iteration':   iteration,
+            'description': description,
+            'tableau':     tableau.copy(),
+            'basis':       basis.copy(),
+            'var_names':   var_names.copy()
+        })
+ 

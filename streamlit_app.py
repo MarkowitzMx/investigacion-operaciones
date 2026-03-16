@@ -37,11 +37,15 @@ st.markdown("""
     .main-header { font-size: 2.5rem; color: #1f77b4; text-align: center; padding: 1rem; }
     .module-card { background-color: #f0f2f6; padding: 1.5rem; border-radius: 10px; margin: 1rem 0; }
     .success-box { background-color: #d4edda; border: 1px solid #c3e6cb; padding: 1rem; border-radius: 5px; margin: 1rem 0; }
+    .phase-header { background-color: #e8f4f8; padding: 0.5rem 1rem; border-left: 4px solid #1f77b4;
+                    border-radius: 4px; margin: 1rem 0 0.5rem 0; }
 </style>
 """, unsafe_allow_html=True)
  
  
-# Inicializar variables de sesión
+# ─────────────────────────────────────────────
+# INICIALIZAR SESIÓN
+# ─────────────────────────────────────────────
 def initialize_session_state():
     if 'history' not in st.session_state:
         st.session_state.history = []
@@ -51,6 +55,29 @@ def initialize_session_state():
         st.session_state.problem_data = None
     if 'examples_loaded' not in st.session_state:
         st.session_state.examples_loaded = False
+ 
+ 
+# ─────────────────────────────────────────────
+# HELPER: mostrar tabla de iteraciones
+# ─────────────────────────────────────────────
+def _show_iterations_table(iterations, label):
+    """Muestra las iteraciones de una fase en un expander."""
+    num_iters = max(0, len(iterations) - 1)
+    with st.expander(f"📊 {label} — {num_iters} iteración(es)"):
+        for it in iterations:
+            st.markdown(f"**Iteración {it['iteration']}** — {it['description']}")
+            col_labels = it['var_names'] + ['RHS']
+            row_labels = (
+                [f"R{r+1}" for r in range(len(it['tableau']) - 1)] + ['Z']
+            )
+            df = pd.DataFrame(
+                it['tableau'],
+                columns=col_labels,
+                index=row_labels
+            )
+            # Resaltar fila Z y columna RHS
+            st.dataframe(df.style.format("{:.4f}"))
+            st.markdown("---")
  
  
 # ─────────────────────────────────────────────
@@ -116,7 +143,6 @@ def show_linear_programming():
             A = np.array(A_list)
             b = np.array(b_list)
  
-            # Validar entradas
             valid, msg = lp.validate_input(c, A, b)
             if not valid:
                 st.error(f"❌ Error en los datos: {msg}")
@@ -125,39 +151,67 @@ def show_linear_programming():
             with st.spinner("Resolviendo..."):
                 solution = lp.solve(c, A, b, method, maximize, var_names, ct_list)
  
+            # ── Resultado óptimo ─────────────────
             if solution['status'] == 'optimal':
                 st.success("✅ Solución óptima encontrada")
  
-                # Formulación matemática
                 st.markdown("### 📐 Formulación")
                 st.code(lp.get_problem_formulation(), language="")
  
-                # Métricas de resultado
                 st.markdown("### 🏆 Resultado")
                 res_cols = st.columns(1 + len(solution['variables']))
                 res_cols[0].metric("Valor Óptimo (Z)", f"{solution['optimal_value']:.4f}")
                 for idx, (var, val) in enumerate(solution['variables'].items()):
                     res_cols[idx + 1].metric(var, f"{val:.4f}")
  
-                # Gráfico interactivo (método gráfico)
+                # Gráfico (método gráfico)
                 if 'figure' in solution:
                     st.plotly_chart(solution['figure'], use_container_width=True)
  
-                # Tabla de iteraciones (simplex)
-                if solution.get('iterations'):
-                    with st.expander(f"📊 Ver iteraciones ({solution.get('num_iterations', 0)})"):
-                        for it in solution['iterations']:
-                            st.markdown(f"**Iteración {it['iteration']}** — {it['description']}")
-                            col_labels = it['var_names'] + ['RHS']
-                            row_labels = (
-                                [f"R{r+1}" for r in range(len(it['tableau']) - 1)] + ['Z']
-                            )
-                            df = pd.DataFrame(
-                                it['tableau'],
-                                columns=col_labels,
-                                index=row_labels
-                            )
-                            st.dataframe(df.style.format("{:.3f}"))
+                # ── Iteraciones Simplex estándar ─
+                if method == 'simplex' and solution.get('iterations'):
+                    st.markdown("### 🔢 Iteraciones del Simplex")
+                    _show_iterations_table(solution['iterations'], "Simplex")
+ 
+                # ── Dos Fases: Fase 1 arriba, Fase 2 abajo ─
+                if method == 'two_phase':
+                    # Resumen de fases
+                    ph_col1, ph_col2, ph_col3 = st.columns(3)
+                    ph_col1.metric("Iteraciones Fase 1", solution.get('num_phase1', 0))
+                    ph_col2.metric("Iteraciones Fase 2", solution.get('num_phase2', 0))
+                    ph_col3.metric("Total iteraciones",  solution.get('total_iterations', 0))
+ 
+                    st.markdown("---")
+ 
+                    # FASE 1
+                    st.markdown(
+                        '<div class="phase-header">🔵 FASE 1 — Encontrar Solución Básica Factible</div>',
+                        unsafe_allow_html=True
+                    )
+                    st.info(
+                        "En la Fase 1 se minimiza la suma de variables artificiales. "
+                        "Si el óptimo es 0, existe una solución factible y se procede a la Fase 2."
+                    )
+                    if solution.get('phase1_iterations'):
+                        _show_iterations_table(solution['phase1_iterations'], "Fase 1")
+                    else:
+                        st.caption("No hubo iteraciones en Fase 1.")
+ 
+                    st.markdown("---")
+ 
+                    # FASE 2
+                    st.markdown(
+                        '<div class="phase-header">🟢 FASE 2 — Optimizar Función Objetivo Original</div>',
+                        unsafe_allow_html=True
+                    )
+                    st.info(
+                        "En la Fase 2 se elimina las variables artificiales y se optimiza "
+                        "con la función objetivo original partiendo de la base factible."
+                    )
+                    if solution.get('phase2_iterations'):
+                        _show_iterations_table(solution['phase2_iterations'], "Fase 2")
+                    else:
+                        st.caption("No hubo iteraciones en Fase 2.")
  
                 # Guardar en historial
                 st.session_state.history.append({
@@ -167,8 +221,14 @@ def show_linear_programming():
                     'variables':     solution['variables']
                 })
  
+            # ── Infactible ───────────────────────
             elif solution['status'] == 'infeasible':
                 st.error("❌ El problema no tiene solución factible.")
+ 
+                # Mostrar Fase 1 aunque sea infactible (útil pedagógicamente)
+                if method == 'two_phase' and solution.get('phase1_iterations'):
+                    st.markdown("### 🔵 Fase 1 — Proceso (no alcanzó Z = 0)")
+                    _show_iterations_table(solution['phase1_iterations'], "Fase 1")
  
             elif solution['status'] == 'unbounded':
                 st.error("❌ El problema no está acotado (solución infinita).")
@@ -201,7 +261,8 @@ def show_home():
             with st.expander(f"📖 {module_name}"):
                 for topic in topics:
                     st.markdown(f"- {topic}")
-      # ── Logos institucionales ──────────────
+ 
+        # Logos institucionales
         st.markdown("---")
         st.markdown("#### 🏫 Instituciones")
         logo1, logo2, logo3 = st.columns(3)
@@ -211,6 +272,10 @@ def show_home():
             st.image("assets/logo2.jpg", width=130, caption="Facultad de Ingeniería")
         with logo3:
             st.image("assets/logo3.png", width=130, caption="UAS 2029")
+ 
+        # Fecha de última actualización debajo de los logos
+        st.caption("🔄 Última actualización: 15 de marzo de 2026")
+ 
     with col2:
         st.markdown("## 🚀 Comenzar")
         st.info("**Pasos rápidos:**\n1. Selecciona un módulo del menú\n2. Ingresa tus datos\n3. ¡Resuelve!")
@@ -227,18 +292,30 @@ def show_home():
 def main():
     initialize_session_state()
  
+    # Configurar locale en español
+    try:
+        import locale
+        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+    except Exception:
+        pass
+ 
     # Header
     st.markdown(
         '<h1 class="main-header">📊 Sistema de Investigación de Operaciones</h1>',
         unsafe_allow_html=True
     )
-    st.markdown("### Universidad Autónoma de Sinaloa - Ingeniería en Desarrollo de Software")
-    st.markdown("👨‍💻 Desarrollado por: Cristóbal Lemus")
+    st.markdown("### Universidad Autónoma de Sinaloa - Ingeniería en Software")
+    st.markdown("👨‍💻 Desarrollado por: **Cristóbal Lemus**")
+    st.caption(f"📅 Fecha actual: {datetime.now().strftime('%d de %B de %Y')}")
     st.markdown("---")
  
     # Sidebar
     with st.sidebar:
-       
+        col_a, col_b = st.columns(2)
+        with col_a:
+            st.image("assets/logo1.jpg", width=100)
+        with col_b:
+            st.image("assets/logo2.jpg", width=100)
         st.markdown("## 🎯 Módulos")
         module = st.radio("Selecciona un módulo:", [
             "🏠 Inicio",
@@ -269,7 +346,7 @@ def main():
     if module == "🏠 Inicio":
         show_home()
     elif module == "📈 Programación Lineal":
-        show_linear_programming()          # ✅ Ahora definida en este archivo
+        show_linear_programming()
     elif module == "🔄 Dualidad y Sensibilidad":
         show_duality_sensitivity()
     elif module == "🔢 Programación Entera":
