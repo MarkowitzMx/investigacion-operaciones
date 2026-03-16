@@ -224,7 +224,7 @@ def main():
         unsafe_allow_html=True
     )
     st.markdown("### Universidad Autónoma de Sinaloa - Ingeniería en Desarrollo deSoftware")
-    t.markdown("👨‍💻 Desarrollado por: Cristóbal Lemus")
+    st.markdown("👨‍💻 Desarrollado por: Cristóbal Lemus")
     st.markdown("---")
  
     # Sidebar
