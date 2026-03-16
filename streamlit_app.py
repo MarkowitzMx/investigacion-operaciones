@@ -8,18 +8,16 @@ st.set_page_config(
 
 st.title("📊 Plataforma de Investigación de Operaciones")
 
-st.write(
-"""
-Bienvenido a la aplicación interactiva para aprender **Investigación de Operaciones**.
+st.write("""
+Bienvenido a la plataforma interactiva para aprender **Investigación de Operaciones**.
 
-En esta plataforma podrás explorar:
+Aquí podrás explorar distintos métodos:
 
-- 📈 Método gráfico
-- 🔢 Método Simplex
-- 🔗 Redes de transporte
-- 📅 PERT / CPM
-"""
-)
+• Método gráfico  
+• Método Simplex  
+• Redes de transporte  
+• PERT / CPM
+""")
 
 st.sidebar.title("Menú")
 
@@ -35,7 +33,7 @@ opcion = st.sidebar.selectbox(
 )
 
 if opcion == "Inicio":
-    st.success("Selecciona un método en el menú.")
+    st.success("Selecciona un método en el menú lateral.")
 
 elif opcion == "Método gráfico":
     st.header("Método gráfico para programación lineal")
