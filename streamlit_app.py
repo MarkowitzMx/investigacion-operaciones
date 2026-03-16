@@ -425,8 +425,3 @@ def show_lp_results():
  
  
 if __name__ == "__main__":
-<<<<<<< HEAD
-    main()
-=======
-    main()
->>>>>>> 5af850f (update app structure and dependencies)
