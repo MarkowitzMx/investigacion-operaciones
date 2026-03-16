@@ -232,7 +232,7 @@ def main():
         '<h1 class="main-header">📊 Sistema de Investigación de Operaciones</h1>',
         unsafe_allow_html=True
     )
-    st.markdown("### Universidad Autónoma de Sinaloa - Ingeniería en Desarrollo deSoftware")
+    st.markdown("### Universidad Autónoma de Sinaloa - Ingeniería en Desarrollo de Software")
     st.markdown("👨‍💻 Desarrollado por: Cristóbal Lemus")
     st.markdown("---")
  
