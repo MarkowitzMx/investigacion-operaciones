@@ -765,6 +765,24 @@ def show_examples_library():
     # ── Ejemplos de PL y PE ───────────────────────────────────────
     lp_pe_examples = {
         "Programación Lineal": {
+                        "Dos Fases — Minimización": {
+                'c': np.array([2000.0, 500.0]),
+                'A': np.array([[2.0, 3.0],[3.0, 6.0]]),
+                'b': np.array([36.0, 60.0]),
+                'maximize': False,
+                'var_names': ['x1', 'x2'],
+                'constraint_types': ['>=', '>='],
+                'description': "Min Z=2000x1+500x2  s.a. 2x1+3x2>=36, 3x1+6x2>=60  →  x1=12, x2=4, Z=26000"
+            },
+            "Dos Fases — Maximización": {
+                'c': np.array([5.0, 4.0]),
+                'A': np.array([[6.0, 4.0],[1.0, 2.0]]),
+                'b': np.array([24.0, 6.0]),
+                'maximize': True,
+                'var_names': ['x1', 'x2'],
+                'constraint_types': ['<=', '<='],
+                'description': "Max Z=5x1+4x2  s.a. 6x1+4x2<=24, x1+2x2<=6  →  x1=3, x2=1.5, Z=21"
+            },
             "Producción Simple": {
                 'c': np.array([3., 5.]), 'A': np.array([[2., 1.], [1., 2.]]),
                 'b': np.array([20., 16.]), 'maximize': True,
