@@ -2,30 +2,27 @@
 Sistema de Investigación de Operaciones
 Aplicación Web Completa con Streamlit
 """
-
+ 
 import streamlit as st
 import numpy as np
 import pandas as pd
 import sys
 from datetime import datetime
-import json
 import os
-
+ 
 # Configurar path dinámico
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
-
+ 
 from modules.linear_programming import LinearProgrammingModule
-from modules.network_analysis import (TransportationProblem, AssignmentProblem, 
+from modules.network_analysis import (TransportationProblem, AssignmentProblem,
                                       NetworkFlowProblems, PertCpm)
 from modules.duality_sensitivity import DualityAnalysis, SensitivityAnalysis
 from modules.integer_programming import IntegerProgramming
-from utils.visualizations import *
-from utils.export import *
 from app_modules import (show_duality_sensitivity, show_integer_programming,
                          show_network_analysis, show_examples_library,
                          show_method_comparison, show_history)
-
+ 
 # Configuración de la página
 st.set_page_config(
     page_title="Sistema de Investigación de Operaciones",
@@ -33,7 +30,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
+ 
 # CSS personalizado
 st.markdown("""
 <style>
@@ -42,7 +39,8 @@ st.markdown("""
     .success-box { background-color: #d4edda; border: 1px solid #c3e6cb; padding: 1rem; border-radius: 5px; margin: 1rem 0; }
 </style>
 """, unsafe_allow_html=True)
-
+ 
+ 
 # Inicializar variables de sesión
 def initialize_session_state():
     if 'history' not in st.session_state:
@@ -53,19 +51,187 @@ def initialize_session_state():
         st.session_state.problem_data = None
     if 'examples_loaded' not in st.session_state:
         st.session_state.examples_loaded = False
-
-# Función principal
+ 
+ 
+# ─────────────────────────────────────────────
+# MÓDULO DE PROGRAMACIÓN LINEAL
+# ─────────────────────────────────────────────
+def show_linear_programming():
+    st.markdown("## 📈 Programación Lineal")
+ 
+    lp = LinearProgrammingModule()
+ 
+    col1, col2 = st.columns([1, 2])
+ 
+    with col1:
+        st.markdown("### ⚙️ Configuración del Problema")
+ 
+        n_vars = st.number_input("Número de variables", min_value=2, max_value=10, value=2, step=1)
+        n_constraints = st.number_input("Número de restricciones", min_value=1, max_value=10, value=2, step=1)
+ 
+        obj_type = st.radio("Tipo de optimización", ["Maximizar", "Minimizar"])
+        maximize = obj_type == "Maximizar"
+ 
+        method = st.selectbox(
+            "Método de solución",
+            ["simplex", "graphical", "two_phase", "pulp"],
+            format_func=lambda x: {
+                "simplex":    "Método Simplex",
+                "graphical":  "Método Gráfico (solo 2 variables)",
+                "two_phase":  "Método de las Dos Fases",
+                "pulp":       "PuLP (Optimizador)"
+            }[x]
+        )
+ 
+        if method == "graphical" and n_vars != 2:
+            st.warning("⚠️ El método gráfico requiere exactamente 2 variables.")
+ 
+        st.markdown("### 🎯 Función Objetivo")
+        var_names = [f"x{i+1}" for i in range(n_vars)]
+        c = np.array([
+            st.number_input(f"Coeficiente {var_names[i]}", value=1.0, key=f"c_{i}")
+            for i in range(n_vars)
+        ])
+ 
+        st.markdown("### 📋 Restricciones")
+        A_list, b_list, ct_list = [], [], []
+        for i in range(n_constraints):
+            st.markdown(f"**Restricción {i+1}**")
+            cols = st.columns(n_vars + 2)
+            row = [
+                cols[j].number_input(f"{var_names[j]}", value=1.0, key=f"A_{i}_{j}")
+                for j in range(n_vars)
+            ]
+            ct  = cols[n_vars].selectbox("Tipo", ["<=", ">=", "="], key=f"ct_{i}")
+            rhs = cols[n_vars + 1].number_input("RHS", value=10.0, key=f"b_{i}")
+            A_list.append(row)
+            b_list.append(rhs)
+            ct_list.append(ct)
+ 
+        solve_btn = st.button("🚀 Resolver", type="primary")
+ 
+    # ── Resultados ──────────────────────────────
+    with col2:
+        if solve_btn:
+            A = np.array(A_list)
+            b = np.array(b_list)
+ 
+            # Validar entradas
+            valid, msg = lp.validate_input(c, A, b)
+            if not valid:
+                st.error(f"❌ Error en los datos: {msg}")
+                return
+ 
+            with st.spinner("Resolviendo..."):
+                solution = lp.solve(c, A, b, method, maximize, var_names, ct_list)
+ 
+            if solution['status'] == 'optimal':
+                st.success("✅ Solución óptima encontrada")
+ 
+                # Formulación matemática
+                st.markdown("### 📐 Formulación")
+                st.code(lp.get_problem_formulation(), language="")
+ 
+                # Métricas de resultado
+                st.markdown("### 🏆 Resultado")
+                res_cols = st.columns(1 + len(solution['variables']))
+                res_cols[0].metric("Valor Óptimo (Z)", f"{solution['optimal_value']:.4f}")
+                for idx, (var, val) in enumerate(solution['variables'].items()):
+                    res_cols[idx + 1].metric(var, f"{val:.4f}")
+ 
+                # Gráfico interactivo (método gráfico)
+                if 'figure' in solution:
+                    st.plotly_chart(solution['figure'], use_container_width=True)
+ 
+                # Tabla de iteraciones (simplex)
+                if solution.get('iterations'):
+                    with st.expander(f"📊 Ver iteraciones ({solution.get('num_iterations', 0)})"):
+                        for it in solution['iterations']:
+                            st.markdown(f"**Iteración {it['iteration']}** — {it['description']}")
+                            col_labels = it['var_names'] + ['RHS']
+                            row_labels = (
+                                [f"R{r+1}" for r in range(len(it['tableau']) - 1)] + ['Z']
+                            )
+                            df = pd.DataFrame(
+                                it['tableau'],
+                                columns=col_labels,
+                                index=row_labels
+                            )
+                            st.dataframe(df.style.format("{:.3f}"))
+ 
+                # Guardar en historial
+                st.session_state.history.append({
+                    'timestamp':     datetime.now().strftime("%H:%M:%S"),
+                    'method':        solution.get('method', method),
+                    'optimal_value': solution['optimal_value'],
+                    'variables':     solution['variables']
+                })
+ 
+            elif solution['status'] == 'infeasible':
+                st.error("❌ El problema no tiene solución factible.")
+ 
+            elif solution['status'] == 'unbounded':
+                st.error("❌ El problema no está acotado (solución infinita).")
+ 
+            elif solution['status'] == 'error':
+                st.error(f"❌ {solution.get('message', 'Error desconocido')}")
+ 
+            else:
+                st.warning(f"⚠️ Estado inesperado: {solution['status']}")
+ 
+ 
+# ─────────────────────────────────────────────
+# PANTALLA DE INICIO
+# ─────────────────────────────────────────────
+def show_home():
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        st.markdown("## 👋 Bienvenido al Sistema de IO")
+        st.markdown(
+            "Este sistema te permite resolver problemas de **Investigación de Operaciones** "
+            "de manera interactiva, con visualizaciones y exportación de resultados."
+        )
+        modules_info = {
+            "Programación Lineal":      ["Método Simplex", "Método Gráfico", "Método de las Dos Fases"],
+            "Dualidad y Sensibilidad":  ["Problema Dual", "Precios Sombra", "Análisis de Sensibilidad"],
+            "Programación Entera":      ["Branch and Bound", "Cortes de Gomory", "Problema de la Mochila"],
+            "Análisis de Redes":        ["Problema de Transporte", "Problema de Asignación", "Flujo Máximo", "PERT-CPM"]
+        }
+        for module_name, topics in modules_info.items():
+            with st.expander(f"📖 {module_name}"):
+                for topic in topics:
+                    st.markdown(f"- {topic}")
+ 
+    with col2:
+        st.markdown("## 🚀 Comenzar")
+        st.info("**Pasos rápidos:**\n1. Selecciona un módulo del menú\n2. Ingresa tus datos\n3. ¡Resuelve!")
+        st.markdown("### 📊 Estadísticas")
+        st.metric("Problemas Resueltos", len(st.session_state.history))
+        if st.session_state.history:
+            recent = st.session_state.history[-1]
+            st.metric("Último Método", recent.get('method', 'N/A'))
+ 
+ 
+# ─────────────────────────────────────────────
+# FUNCIÓN PRINCIPAL
+# ─────────────────────────────────────────────
 def main():
     initialize_session_state()
-    
+ 
     # Header
-    st.markdown('<h1 class="main-header">📊 Sistema de Investigación de Operaciones</h1>', unsafe_allow_html=True)
+    st.markdown(
+        '<h1 class="main-header">📊 Sistema de Investigación de Operaciones</h1>',
+        unsafe_allow_html=True
+    )
     st.markdown("### Universidad Autónoma de Sinaloa - Ingeniería en Software")
     st.markdown("---")
-    
+ 
     # Sidebar
     with st.sidebar:
-        st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/UAS_Logo.svg/1200px-UAS_Logo.svg.png", width=150)
+        st.image(
+            "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/UAS_Logo.svg/1200px-UAS_Logo.svg.png",
+            width=150
+        )
         st.markdown("## 🎯 Módulos")
         module = st.radio("Selecciona un módulo:", [
             "🏠 Inicio",
@@ -79,18 +245,24 @@ def main():
         ])
         st.markdown("---")
         st.markdown("### ⚙️ Configuración")
-        show_steps = st.checkbox("Mostrar pasos detallados", value=True)
-        auto_export = st.checkbox("Auto-exportar resultados", value=False)
+        st.checkbox("Mostrar pasos detallados", value=True)
+        st.checkbox("Auto-exportar resultados", value=False)
         st.markdown("---")
         st.markdown("### 📖 Ayuda")
         with st.expander("ℹ️ Guía rápida"):
-            st.markdown("1. Selecciona un módulo\n2. Ingresa los datos del problema\n3. Elige el método de solución\n4. Visualiza resultados\n5. Exporta si lo deseas")
-    
-    # Contenido principal
+            st.markdown(
+                "1. Selecciona un módulo\n"
+                "2. Ingresa los datos del problema\n"
+                "3. Elige el método de solución\n"
+                "4. Visualiza resultados\n"
+                "5. Exporta si lo deseas"
+            )
+ 
+    # Enrutador de módulos
     if module == "🏠 Inicio":
         show_home()
     elif module == "📈 Programación Lineal":
-        show_linear_programming()
+        show_linear_programming()          # ✅ Ahora definida en este archivo
     elif module == "🔄 Dualidad y Sensibilidad":
         show_duality_sensitivity()
     elif module == "🔢 Programación Entera":
@@ -103,31 +275,7 @@ def main():
         show_method_comparison()
     elif module == "💾 Historial":
         show_history()
-
-# Función de inicio
-def show_home():
-    col1, col2 = st.columns([2,1])
-    with col1:
-        st.markdown("## 👋 Bienvenido al Sistema de IO")
-        st.markdown("Este sistema te permite resolver problemas de **Investigación de Operaciones** de manera interactiva, con visualizaciones y exportación de resultados.")
-        modules_info = {
-            "Programación Lineal": ["Método Simplex","Método Gráfico","Método de las Dos Fases"],
-            "Dualidad y Sensibilidad": ["Problema Dual","Precios Sombra","Análisis de Sensibilidad"],
-            "Programación Entera": ["Branch and Bound","Cortes de Gomory","Problema de la Mochila"],
-            "Análisis de Redes": ["Problema de Transporte","Problema de Asignación","Flujo Máximo","PERT-CPM"]
-        }
-        for module_name, topics in modules_info.items():
-            with st.expander(f"📖 {module_name}"):
-                for topic in topics:
-                    st.markdown(f"- {topic}")
-    with col2:
-        st.markdown("## 🚀 Comenzar")
-        st.info("**Pasos rápidos:**\n1. Selecciona un módulo del menú\n2. Ingresa tus datos\n3. ¡Resuelve!")
-        st.markdown("### 📊 Estadísticas")
-        st.metric("Problemas Resueltos", len(st.session_state.history))
-        if st.session_state.history:
-            recent = st.session_state.history[-1]
-            st.metric("Último Método", recent.get('method', 'N/A'))
-
+ 
+ 
 if __name__ == "__main__":
     main()
