@@ -274,7 +274,7 @@ def show_home():
             st.image("assets/logo3.png", width=130, caption="UAS 2029")
  
         # Fecha de última actualización debajo de los logos
-        st.caption("🔄 Última actualización: 15 de marzo de 2026")
+        st.caption("🔄 Última actualización: 20 de marzo de 2026")
  
     with col2:
         st.markdown("## 🚀 Comenzar")
