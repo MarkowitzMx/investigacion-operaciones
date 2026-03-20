@@ -1176,7 +1176,7 @@ def show_examples_library():
     st.markdown("## 📚 Biblioteca de Ejemplos")
     cat = st.selectbox("Categoría:", [
         "Programación Lineal", "Programación Entera", "Transporte", "Asignación",
-        "Camino más Corto", "Flujo Máximo", "Árbol Expansión Mínima"
+        "Camino más Corto", "Flujo Máximo", "Árbol Expansión Mínima", "PERT-CPM"
     ])
 
     # ── Ejemplos de PL y PE ───────────────────────────────────────
@@ -1445,6 +1445,65 @@ def show_examples_library():
                     "max_flow":      "Flujo Máximo",
                     "mst":           "Árbol Expansión"}[ex['type']]
             st.success(f"✅ Ejemplo cargado. Ve a **Análisis de Redes → {dest}**.")
+
+
+    # ── Ejemplos PERT-CPM ─────────────────────────────────────────
+    pert_examples = {
+        "Proyecto de Construcción": {
+            'activities': [
+                {'id': 'A', 'duration': 3, 'predecessors': []},
+                {'id': 'B', 'duration': 4, 'predecessors': []},
+                {'id': 'C', 'duration': 2, 'predecessors': ['A']},
+                {'id': 'D', 'duration': 5, 'predecessors': ['A']},
+                {'id': 'E', 'duration': 3, 'predecessors': ['B','C']},
+                {'id': 'F', 'duration': 2, 'predecessors': ['D','E']},
+            ],
+            'description': "6 actividades — Ruta crítica: A→D→F, duración = 10 días"
+        },
+        "Desarrollo de Software": {
+            'activities': [
+                {'id': 'A', 'duration': 5,  'predecessors': []},
+                {'id': 'B', 'duration': 7,  'predecessors': ['A']},
+                {'id': 'C', 'duration': 10, 'predecessors': ['B']},
+                {'id': 'D', 'duration': 6,  'predecessors': ['C']},
+                {'id': 'E', 'duration': 4,  'predecessors': ['B']},
+                {'id': 'F', 'duration': 2,  'predecessors': ['D','E']},
+            ],
+            'description': "6 fases de software — Ruta crítica: A→B→C→D→F, duración = 30 días"
+        },
+        "Lanzamiento de Producto": {
+            'activities': [
+                {'id': 'A', 'duration': 2,  'predecessors': []},
+                {'id': 'B', 'duration': 4,  'predecessors': []},
+                {'id': 'C', 'duration': 3,  'predecessors': ['A']},
+                {'id': 'D', 'duration': 6,  'predecessors': ['B']},
+                {'id': 'E', 'duration': 5,  'predecessors': ['C','D']},
+                {'id': 'F', 'duration': 3,  'predecessors': ['E']},
+                {'id': 'G', 'duration': 4,  'predecessors': ['E']},
+                {'id': 'H', 'duration': 2,  'predecessors': ['F','G']},
+            ],
+            'description': "8 actividades — Proyecto de lanzamiento con ruta crítica B→D→E→G→H"
+        }
+    }
+
+    if cat == "PERT-CPM":
+        name = st.selectbox("Ejemplo:", list(pert_examples.keys()))
+        ex   = pert_examples[name]
+        st.markdown(f"**{ex['description']}**")
+
+        with st.expander("👁️ Ver actividades"):
+            rows = []
+            for act in ex['activities']:
+                rows.append({
+                    'ID': act['id'],
+                    'Duración': act['duration'],
+                    'Predecesores': ', '.join(act['predecessors']) if act['predecessors'] else '—'
+                })
+            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+        if st.button("📥 Cargar en Análisis de Redes → PERT-CPM"):
+            st.session_state.pert_example = ex['activities']
+            st.success("✅ Ejemplo cargado. Ve a **Análisis de Redes → PERT-CPM**.")
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  COMPARAR MÉTODOS
