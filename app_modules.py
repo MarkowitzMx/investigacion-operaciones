@@ -764,6 +764,8 @@ def show_shortest_path():
     with c2: target = st.selectbox("Nodo destino:", node_names, index=len(node_names)-1, key="sp_target")
 
     if st.button("🚀 Encontrar Camino Más Corto", type="primary"):
+        import plotly.graph_objects as go
+        import networkx as nx
         graph = {n: {} for n in node_names}
         for src, dst, w in edges:
             graph[src][dst] = w
@@ -774,26 +776,85 @@ def show_shortest_path():
         if sol['status'] == 'found':
             st.success("✅ Camino encontrado")
             st.metric("Distancia Total", f"{sol['length']:.2f}")
-            path_str = " → ".join(sol['path'])
+            path = sol['path']
+            path_str = " → ".join(path)
             st.markdown(f"### 🛤️ Ruta óptima: **{path_str}**")
 
-            # Tabla de aristas del camino
+            # ── Grafo con Plotly ──────────────────────────────────
+            G = nx.DiGraph()
+            for src2, dst2, w2 in edges:
+                G.add_edge(src2, dst2, weight=w2)
+            pos = nx.spring_layout(G, seed=42)
+
+            path_edges = set(zip(path[:-1], path[1:]))
+
+            edge_traces = []
+            for u, v, data in G.edges(data=True):
+                x0, y0 = pos[u]; x1, y1 = pos[v]
+                is_path = (u, v) in path_edges
+                color = "#e74c3c" if is_path else "#aaaaaa"
+                width = 4 if is_path else 1.5
+                edge_traces.append(go.Scatter(
+                    x=[x0, x1, None], y=[y0, y1, None],
+                    mode="lines",
+                    line=dict(width=width, color=color),
+                    hoverinfo="none", showlegend=False
+                ))
+                mx, my = (x0+x1)/2, (y0+y1)/2
+                edge_traces.append(go.Scatter(
+                    x=[mx], y=[my],
+                    mode="text",
+                    text=[str(data['weight'])],
+                    textfont=dict(size=11, color="#333"),
+                    hoverinfo="none", showlegend=False
+                ))
+
+            node_colors = []
+            for n in G.nodes():
+                if n == source:       node_colors.append("#2ecc71")
+                elif n == target:     node_colors.append("#e74c3c")
+                elif n in path:       node_colors.append("#f39c12")
+                else:                 node_colors.append("#3498db")
+
+            node_trace = go.Scatter(
+                x=[pos[n][0] for n in G.nodes()],
+                y=[pos[n][1] for n in G.nodes()],
+                mode="markers+text",
+                marker=dict(size=30, color=node_colors,
+                            line=dict(width=2, color="white")),
+                text=list(G.nodes()),
+                textposition="middle center",
+                textfont=dict(size=13, color="white"),
+                hoverinfo="text"
+            )
+
+            fig = go.Figure(data=edge_traces + [node_trace])
+            fig.update_layout(
+                title="Grafo — Ruta óptima en rojo",
+                showlegend=False,
+                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                height=450,
+                margin=dict(l=20, r=20, t=40, b=20),
+                plot_bgcolor="white"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Tabla detalle
             st.markdown("#### Detalle del camino:")
-            path = sol['path']
             rows = []
             for i in range(len(path)-1):
-                w = graph.get(path[i], {}).get(path[i+1], 0)
-                rows.append({'Desde': path[i], 'Hasta': path[i+1], 'Distancia': w})
+                w2 = graph.get(path[i], {}).get(path[i+1], 0)
+                rows.append({"Desde": path[i], "Hasta": path[i+1], "Distancia": w2})
             st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
             st.session_state.history.append({
-                'timestamp': datetime.now(), 'module': 'Camino Más Corto',
-                'method': 'Dijkstra', 'status': 'optimal',
-                'objective_value': sol['length']
+                "timestamp": datetime.now(), "module": "Camino Más Corto",
+                "method": "Dijkstra", "status": "optimal",
+                "objective_value": sol["length"]
             })
         else:
             st.error(f"❌ {sol.get('message', 'No se encontró camino')}")
-
 
 def show_maximum_flow():
     st.markdown("### 🌊 Flujo Máximo")
@@ -823,6 +884,8 @@ def show_maximum_flow():
     with c2: sink   = st.selectbox("Nodo sumidero (T):", node_names, index=len(node_names)-1, key="mf_sink")
 
     if st.button("🚀 Calcular Flujo Máximo", type="primary"):
+        import plotly.graph_objects as go
+        import networkx as nx
         graph = {n: {} for n in node_names}
         for src, dst, cap in edges:
             graph[src][dst] = cap
@@ -834,29 +897,89 @@ def show_maximum_flow():
             st.success("✅ Flujo máximo calculado")
             st.metric("Flujo Máximo", f"{sol['max_flow']:.2f}")
 
-            # Tabla de flujos por arista
+            # ── Grafo con Plotly ──────────────────────────────────
+            G = nx.DiGraph()
+            for src2, dst2, cap2 in edges:
+                G.add_edge(src2, dst2, capacity=cap2)
+            pos = nx.spring_layout(G, seed=42)
+
+            flow_dict = sol['flow_dict']
+
+            edge_traces = []
+            for u, v, data in G.edges(data=True):
+                x0, y0 = pos[u]; x1, y1 = pos[v]
+                flow = flow_dict.get(u, {}).get(v, 0)
+                cap2 = data['capacity']
+                ratio = flow / cap2 if cap2 > 0 else 0
+                color = f"rgba(231,76,60,{0.3 + 0.7*ratio})"
+                width = 1.5 + 4 * ratio
+                edge_traces.append(go.Scatter(
+                    x=[x0, x1, None], y=[y0, y1, None],
+                    mode="lines",
+                    line=dict(width=width, color=color),
+                    hoverinfo="none", showlegend=False
+                ))
+                mx, my = (x0+x1)/2, (y0+y1)/2
+                edge_traces.append(go.Scatter(
+                    x=[mx], y=[my],
+                    mode="text",
+                    text=[f"{flow:.0f}/{cap2:.0f}"],
+                    textfont=dict(size=10, color="#333"),
+                    hoverinfo="none", showlegend=False
+                ))
+
+            node_colors = []
+            for n in G.nodes():
+                if n == source:   node_colors.append("#2ecc71")
+                elif n == sink:   node_colors.append("#e74c3c")
+                else:             node_colors.append("#3498db")
+
+            node_trace = go.Scatter(
+                x=[pos[n][0] for n in G.nodes()],
+                y=[pos[n][1] for n in G.nodes()],
+                mode="markers+text",
+                marker=dict(size=30, color=node_colors,
+                            line=dict(width=2, color="white")),
+                text=list(G.nodes()),
+                textposition="middle center",
+                textfont=dict(size=13, color="white"),
+                hoverinfo="text"
+            )
+
+            fig = go.Figure(data=edge_traces + [node_trace])
+            fig.update_layout(
+                title="Red de Flujo — etiquetas flujo/capacidad",
+                showlegend=False,
+                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                height=450,
+                margin=dict(l=20, r=20, t=40, b=20),
+                plot_bgcolor="white"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Tabla
             st.markdown("#### Flujo por arista:")
             rows = []
-            for src, dsts in sol['flow_dict'].items():
-                for dst, flow in dsts.items():
+            for src2, dsts in sol['flow_dict'].items():
+                for dst2, flow in dsts.items():
                     if flow > 0:
-                        cap = graph.get(src, {}).get(dst, 0)
+                        cap2 = graph.get(src2, {}).get(dst2, 0)
                         rows.append({
-                            'Desde': src, 'Hasta': dst,
-                            'Flujo': flow, 'Capacidad': cap,
-                            'Utilización': f"{(flow/cap*100):.1f}%" if cap > 0 else "N/A"
+                            "Desde": src2, "Hasta": dst2,
+                            "Flujo": flow, "Capacidad": cap2,
+                            "Utilización": f"{(flow/cap2*100):.1f}%" if cap2 > 0 else "N/A"
                         })
             if rows:
                 st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
             st.session_state.history.append({
-                'timestamp': datetime.now(), 'module': 'Flujo Máximo',
-                'method': 'Ford-Fulkerson', 'status': 'optimal',
-                'objective_value': sol['max_flow']
+                "timestamp": datetime.now(), "module": "Flujo Máximo",
+                "method": "Ford-Fulkerson", "status": "optimal",
+                "objective_value": sol["max_flow"]
             })
         else:
             st.error("❌ Error al calcular flujo máximo")
-
 
 def show_minimum_spanning_tree():
     st.markdown("### 🌳 Árbol de Expansión Mínima")
@@ -882,12 +1005,14 @@ def show_minimum_spanning_tree():
         edges.append((src, dst, w))
 
     if st.button("🚀 Calcular Árbol de Expansión Mínima", type="primary"):
+        import plotly.graph_objects as go
+        import networkx as nx
         graph = {}
         for src, dst, w in edges:
             if src not in graph: graph[src] = {}
             if dst not in graph: graph[dst] = {}
             graph[src][dst] = w
-            graph[dst][src] = w  # no dirigido
+            graph[dst][src] = w
 
         with st.spinner("Calculando..."):
             sol = NetworkFlowProblems().minimum_spanning_tree(graph)
@@ -896,23 +1021,77 @@ def show_minimum_spanning_tree():
             st.success("✅ Árbol de expansión mínima encontrado")
             st.metric("Costo Total del Árbol", f"{sol['total_weight']:.2f}")
 
-            # Tabla de aristas del árbol
+            # ── Grafo con Plotly ──────────────────────────────────
+            G = nx.Graph()
+            for src2, dst2, w2 in edges:
+                G.add_edge(src2, dst2, weight=w2)
+            pos = nx.spring_layout(G, seed=42)
+
+            mst_edges = set(
+                (e['from'], e['to']) for e in sol['edges']
+            ) | set(
+                (e['to'], e['from']) for e in sol['edges']
+            )
+
+            edge_traces = []
+            for u, v, data in G.edges(data=True):
+                x0, y0 = pos[u]; x1, y1 = pos[v]
+                in_mst = (u,v) in mst_edges
+                color = "#2ecc71" if in_mst else "#dddddd"
+                width = 4 if in_mst else 1
+                edge_traces.append(go.Scatter(
+                    x=[x0, x1, None], y=[y0, y1, None],
+                    mode="lines",
+                    line=dict(width=width, color=color),
+                    hoverinfo="none", showlegend=False
+                ))
+                mx, my = (x0+x1)/2, (y0+y1)/2
+                edge_traces.append(go.Scatter(
+                    x=[mx], y=[my],
+                    mode="text",
+                    text=[str(data['weight'])],
+                    textfont=dict(size=11, color="#333"),
+                    hoverinfo="none", showlegend=False
+                ))
+
+            node_trace = go.Scatter(
+                x=[pos[n][0] for n in G.nodes()],
+                y=[pos[n][1] for n in G.nodes()],
+                mode="markers+text",
+                marker=dict(size=30, color="#3498db",
+                            line=dict(width=2, color="white")),
+                text=list(G.nodes()),
+                textposition="middle center",
+                textfont=dict(size=13, color="white"),
+                hoverinfo="text"
+            )
+
+            fig = go.Figure(data=edge_traces + [node_trace])
+            fig.update_layout(
+                title="Grafo — Árbol de expansión mínima en verde",
+                showlegend=False,
+                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                height=450,
+                margin=dict(l=20, r=20, t=40, b=20),
+                plot_bgcolor="white"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Tabla
             st.markdown("#### Aristas del árbol:")
             df = pd.DataFrame(sol['edges'])
             df.columns = ['Desde', 'Hasta', 'Peso']
             st.dataframe(df, use_container_width=True, hide_index=True)
-
-            st.markdown(f"**Total de aristas:** {len(sol['edges'])} "
-                       f"(conecta {len(node_names)} nodos)")
+            st.markdown(f"**Total de aristas:** {len(sol['edges'])} (conecta {len(node_names)} nodos)")
 
             st.session_state.history.append({
-                'timestamp': datetime.now(), 'module': 'Árbol Expansión Mínima',
-                'method': 'Kruskal/Prim', 'status': 'optimal',
-                'objective_value': sol['total_weight']
+                "timestamp": datetime.now(), "module": "Árbol Expansión Mínima",
+                "method": "Kruskal/Prim", "status": "optimal",
+                "objective_value": sol["total_weight"]
             })
         else:
             st.error("❌ Error al calcular el árbol de expansión mínima")
-
 
 def show_pert_cpm():
     st.markdown("### PERT-CPM")
