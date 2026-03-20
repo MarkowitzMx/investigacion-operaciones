@@ -311,11 +311,6 @@ def main():
  
     # Sidebar
     with st.sidebar:
-        col_a, col_b = st.columns(2)
-        with col_a:
-            st.image("assets/logo1.jpg", width=100)
-        with col_b:
-            st.image("assets/logo2.jpg", width=100)
         st.markdown("## 🎯 Módulos")
         module = st.radio("Selecciona un módulo:", [
             "🏠 Inicio",
