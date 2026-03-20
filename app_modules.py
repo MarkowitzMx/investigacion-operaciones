@@ -1119,7 +1119,8 @@ def show_pert_cpm():
 def show_examples_library():
     st.markdown("## 📚 Biblioteca de Ejemplos")
     cat = st.selectbox("Categoría:", [
-        "Programación Lineal", "Programación Entera", "Transporte", "Asignación"
+        "Programación Lineal", "Programación Entera", "Transporte", "Asignación",
+        "Camino más Corto", "Flujo Máximo", "Árbol Expansión Mínima"
     ])
 
     # ── Ejemplos de PL y PE ───────────────────────────────────────
@@ -1315,6 +1316,79 @@ def show_examples_library():
             st.session_state.assignment_example = ex
             st.success("✅ Ejemplo cargado. Ve a **Análisis de Redes → Asignación**.")
 
+
+
+    # ── Ejemplos de Redes ─────────────────────────────────────────
+    network_examples = {
+        "Camino más Corto": {
+            "Ruta Clásica A→D": {
+                'nodes': ['A','B','C','D'],
+                'edges': [('A','B',4),('A','C',2),('C','B',1),('B','D',3),('C','D',7)],
+                'source': 'A', 'target': 'D',
+                'description': "4 nodos, 5 aristas — Ruta óptima: A→C→B→D = 6",
+                'type': 'shortest_path'
+            },
+            "Red de Ciudades": {
+                'nodes': ['S','A','B','C','T'],
+                'edges': [('S','A',10),('S','B',8),('A','C',5),('B','C',3),('B','T',7),('C','T',6),('A','T',15)],
+                'source': 'S', 'target': 'T',
+                'description': "5 nodos, 7 aristas — Camino más corto de S a T",
+                'type': 'shortest_path'
+            }
+        },
+        "Flujo Máximo": {
+            "Red de Flujo Clásica": {
+                'nodes': ['A','B','C','D','E'],
+                'edges': [('A','B',10),('A','C',8),('B','D',5),('B','C',3),('C','D',7),('C','E',6),('D','E',9)],
+                'source': 'A', 'sink': 'E',
+                'description': "5 nodos — Flujo máximo de A a E = 15",
+                'type': 'max_flow'
+            },
+            "Pipeline de Datos": {
+                'nodes': ['S','A','B','C','D','T'],
+                'edges': [('S','A',15),('S','B',10),('A','C',12),('A','D',8),('B','C',5),('B','D',10),('C','T',15),('D','T',12)],
+                'source': 'S', 'sink': 'T',
+                'description': "6 nodos — Red de distribución con fuente S y sumidero T",
+                'type': 'max_flow'
+            }
+        },
+        "Árbol Expansión Mínima": {
+            "Red de Cables": {
+                'nodes': ['A','B','C','D','E'],
+                'edges': [('A','B',4),('A','C',2),('B','C',1),('B','D',5),('C','D',8),('C','E',10),('D','E',2)],
+                'description': "5 nodos — Árbol mínimo con costo total = 10",
+                'type': 'mst'
+            },
+            "Red de Ciudades": {
+                'nodes': ['A','B','C','D','E','F'],
+                'edges': [('A','B',7),('A','C',9),('B','C',10),('B','D',15),('C','D',11),('C','E',6),('D','E',9),('D','F',11),('E','F',8)],
+                'description': "6 nodos — Conectar ciudades con mínimo cableado",
+                'type': 'mst'
+            }
+        }
+    }
+
+    if cat in network_examples:
+        examples = network_examples[cat]
+        name = st.selectbox("Ejemplo:", list(examples.keys()))
+        ex   = examples[name]
+        st.markdown(f"**{ex['description']}**")
+
+        with st.expander("👁️ Ver datos del ejemplo"):
+            st.markdown("**Nodos:** " + ", ".join(ex['nodes']))
+            rows = [{"Desde": e[0], "Hasta": e[1], "Peso/Capacidad": e[2]} for e in ex['edges']]
+            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+            if ex['type'] == 'shortest_path':
+                st.info(f"Origen: **{ex['source']}** → Destino: **{ex['target']}**")
+            elif ex['type'] == 'max_flow':
+                st.info(f"Fuente: **{ex['source']}** → Sumidero: **{ex['sink']}**")
+
+        if st.button("📥 Cargar en Análisis de Redes"):
+            st.session_state.network_example = ex
+            dest = {"shortest_path": "Camino más Corto",
+                    "max_flow":      "Flujo Máximo",
+                    "mst":           "Árbol Expansión"}[ex['type']]
+            st.success(f"✅ Ejemplo cargado. Ve a **Análisis de Redes → {dest}**.")
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  COMPARAR MÉTODOS
