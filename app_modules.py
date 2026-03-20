@@ -804,7 +804,7 @@ def show_shortest_path():
             G = nx.DiGraph()
             for src2, dst2, w2 in edges:
                 G.add_edge(src2, dst2, weight=w2)
-            pos = nx.spring_layout(G, seed=42)
+            pos = nx.kamada_kawai_layout(G)
 
             path_edges = set(zip(path[:-1], path[1:]))
 
@@ -941,7 +941,7 @@ def show_maximum_flow():
             G = nx.DiGraph()
             for src2, dst2, cap2 in edges:
                 G.add_edge(src2, dst2, capacity=cap2)
-            pos = nx.spring_layout(G, seed=42)
+            pos = nx.kamada_kawai_layout(G)
 
             flow_dict = sol['flow_dict']
 
@@ -1081,7 +1081,7 @@ def show_minimum_spanning_tree():
             G = nx.Graph()
             for src2, dst2, w2 in edges:
                 G.add_edge(src2, dst2, weight=w2)
-            pos = nx.spring_layout(G, seed=42)
+            pos = nx.kamada_kawai_layout(G)
 
             mst_edges = set(
                 (e['from'], e['to']) for e in sol['edges']
