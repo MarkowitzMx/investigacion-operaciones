@@ -595,11 +595,13 @@ def _show_ip_results():
 
 def show_network_analysis():
     st.markdown("## 🌐 Análisis de Redes")
-    pt = st.selectbox("Tipo:", ["Transporte","Asignación","Camino más Corto","Flujo Máximo","PERT-CPM"])
-    if pt == "Transporte":        show_transportation_problem()
-    elif pt == "Asignación":      show_assignment_problem()
-    elif pt == "PERT-CPM":        show_pert_cpm()
-    else:                          st.info(f"🚧 '{pt}' en construcción...")
+    pt = st.selectbox("Tipo:", ["Transporte","Asignación","Camino más Corto","Flujo Máximo","Árbol Expansión","PERT-CPM"])
+    if pt == "Transporte":          show_transportation_problem()
+    elif pt == "Asignación":        show_assignment_problem()
+    elif pt == "Camino más Corto":  show_shortest_path()
+    elif pt == "Flujo Máximo":      show_maximum_flow()
+    elif pt == "Árbol Expansión":   show_minimum_spanning_tree()
+    elif pt == "PERT-CPM":          show_pert_cpm()
 
 
 def show_transportation_problem():
@@ -731,6 +733,185 @@ def show_assignment_problem():
                 'method': 'Húngaro', 'status': 'optimal',
                 'objective_value': sol['total_cost']
             })
+
+
+
+def show_shortest_path():
+    st.markdown("### 🗺️ Camino Más Corto")
+    st.info("Define los nodos y aristas del grafo. El peso representa la distancia o costo.")
+
+    num_nodes = st.number_input("Número de nodos:", min_value=2, max_value=10, value=5, step=1)
+    node_names = []
+    st.markdown("#### Nombres de nodos:")
+    cols = st.columns(num_nodes)
+    for i in range(num_nodes):
+        with cols[i]:
+            name = st.text_input(f"Nodo {i+1}", value=chr(65+i), key=f"sp_node_{i}")
+            node_names.append(name.strip())
+
+    st.markdown("#### Aristas (conexiones):")
+    num_edges = st.number_input("Número de aristas:", min_value=1, max_value=30, value=6, step=1)
+    edges = []
+    for i in range(num_edges):
+        c1, c2, c3 = st.columns(3)
+        with c1: src = st.selectbox(f"Desde", node_names, key=f"sp_src_{i}")
+        with c2: dst = st.selectbox(f"Hasta", node_names, key=f"sp_dst_{i}")
+        with c3: w   = st.number_input("Peso", value=1.0, min_value=0.1, key=f"sp_w_{i}")
+        edges.append((src, dst, w))
+
+    c1, c2 = st.columns(2)
+    with c1: source = st.selectbox("Nodo origen:",  node_names, key="sp_source")
+    with c2: target = st.selectbox("Nodo destino:", node_names, index=len(node_names)-1, key="sp_target")
+
+    if st.button("🚀 Encontrar Camino Más Corto", type="primary"):
+        graph = {n: {} for n in node_names}
+        for src, dst, w in edges:
+            graph[src][dst] = w
+
+        with st.spinner("Calculando..."):
+            sol = NetworkFlowProblems().shortest_path(graph, source, target)
+
+        if sol['status'] == 'found':
+            st.success("✅ Camino encontrado")
+            st.metric("Distancia Total", f"{sol['length']:.2f}")
+            path_str = " → ".join(sol['path'])
+            st.markdown(f"### 🛤️ Ruta óptima: **{path_str}**")
+
+            # Tabla de aristas del camino
+            st.markdown("#### Detalle del camino:")
+            path = sol['path']
+            rows = []
+            for i in range(len(path)-1):
+                w = graph.get(path[i], {}).get(path[i+1], 0)
+                rows.append({'Desde': path[i], 'Hasta': path[i+1], 'Distancia': w})
+            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+            st.session_state.history.append({
+                'timestamp': datetime.now(), 'module': 'Camino Más Corto',
+                'method': 'Dijkstra', 'status': 'optimal',
+                'objective_value': sol['length']
+            })
+        else:
+            st.error(f"❌ {sol.get('message', 'No se encontró camino')}")
+
+
+def show_maximum_flow():
+    st.markdown("### 🌊 Flujo Máximo")
+    st.info("Define la red con capacidades en cada arista.")
+
+    num_nodes = st.number_input("Número de nodos:", min_value=2, max_value=10, value=5, step=1)
+    node_names = []
+    st.markdown("#### Nombres de nodos:")
+    cols = st.columns(num_nodes)
+    for i in range(num_nodes):
+        with cols[i]:
+            name = st.text_input(f"Nodo {i+1}", value=chr(65+i), key=f"mf_node_{i}")
+            node_names.append(name.strip())
+
+    st.markdown("#### Aristas con capacidades:")
+    num_edges = st.number_input("Número de aristas:", min_value=1, max_value=30, value=6, step=1)
+    edges = []
+    for i in range(num_edges):
+        c1, c2, c3 = st.columns(3)
+        with c1: src = st.selectbox("Desde", node_names, key=f"mf_src_{i}")
+        with c2: dst = st.selectbox("Hasta", node_names, key=f"mf_dst_{i}")
+        with c3: cap = st.number_input("Capacidad", value=10.0, min_value=0.1, key=f"mf_cap_{i}")
+        edges.append((src, dst, cap))
+
+    c1, c2 = st.columns(2)
+    with c1: source = st.selectbox("Nodo fuente (S):",   node_names, key="mf_source")
+    with c2: sink   = st.selectbox("Nodo sumidero (T):", node_names, index=len(node_names)-1, key="mf_sink")
+
+    if st.button("🚀 Calcular Flujo Máximo", type="primary"):
+        graph = {n: {} for n in node_names}
+        for src, dst, cap in edges:
+            graph[src][dst] = cap
+
+        with st.spinner("Calculando..."):
+            sol = NetworkFlowProblems().maximum_flow(graph, source, sink)
+
+        if sol['status'] == 'optimal':
+            st.success("✅ Flujo máximo calculado")
+            st.metric("Flujo Máximo", f"{sol['max_flow']:.2f}")
+
+            # Tabla de flujos por arista
+            st.markdown("#### Flujo por arista:")
+            rows = []
+            for src, dsts in sol['flow_dict'].items():
+                for dst, flow in dsts.items():
+                    if flow > 0:
+                        cap = graph.get(src, {}).get(dst, 0)
+                        rows.append({
+                            'Desde': src, 'Hasta': dst,
+                            'Flujo': flow, 'Capacidad': cap,
+                            'Utilización': f"{(flow/cap*100):.1f}%" if cap > 0 else "N/A"
+                        })
+            if rows:
+                st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+            st.session_state.history.append({
+                'timestamp': datetime.now(), 'module': 'Flujo Máximo',
+                'method': 'Ford-Fulkerson', 'status': 'optimal',
+                'objective_value': sol['max_flow']
+            })
+        else:
+            st.error("❌ Error al calcular flujo máximo")
+
+
+def show_minimum_spanning_tree():
+    st.markdown("### 🌳 Árbol de Expansión Mínima")
+    st.info("Define el grafo no dirigido. El árbol conectará todos los nodos con el menor costo total.")
+
+    num_nodes = st.number_input("Número de nodos:", min_value=2, max_value=10, value=5, step=1)
+    node_names = []
+    st.markdown("#### Nombres de nodos:")
+    cols = st.columns(num_nodes)
+    for i in range(num_nodes):
+        with cols[i]:
+            name = st.text_input(f"Nodo {i+1}", value=chr(65+i), key=f"mst_node_{i}")
+            node_names.append(name.strip())
+
+    st.markdown("#### Aristas (grafo no dirigido):")
+    num_edges = st.number_input("Número de aristas:", min_value=1, max_value=30, value=6, step=1)
+    edges = []
+    for i in range(num_edges):
+        c1, c2, c3 = st.columns(3)
+        with c1: src = st.selectbox("Nodo 1", node_names, key=f"mst_src_{i}")
+        with c2: dst = st.selectbox("Nodo 2", node_names, key=f"mst_dst_{i}")
+        with c3: w   = st.number_input("Peso", value=1.0, min_value=0.1, key=f"mst_w_{i}")
+        edges.append((src, dst, w))
+
+    if st.button("🚀 Calcular Árbol de Expansión Mínima", type="primary"):
+        graph = {}
+        for src, dst, w in edges:
+            if src not in graph: graph[src] = {}
+            if dst not in graph: graph[dst] = {}
+            graph[src][dst] = w
+            graph[dst][src] = w  # no dirigido
+
+        with st.spinner("Calculando..."):
+            sol = NetworkFlowProblems().minimum_spanning_tree(graph)
+
+        if sol['status'] == 'optimal':
+            st.success("✅ Árbol de expansión mínima encontrado")
+            st.metric("Costo Total del Árbol", f"{sol['total_weight']:.2f}")
+
+            # Tabla de aristas del árbol
+            st.markdown("#### Aristas del árbol:")
+            df = pd.DataFrame(sol['edges'])
+            df.columns = ['Desde', 'Hasta', 'Peso']
+            st.dataframe(df, use_container_width=True, hide_index=True)
+
+            st.markdown(f"**Total de aristas:** {len(sol['edges'])} "
+                       f"(conecta {len(node_names)} nodos)")
+
+            st.session_state.history.append({
+                'timestamp': datetime.now(), 'module': 'Árbol Expansión Mínima',
+                'method': 'Kruskal/Prim', 'status': 'optimal',
+                'objective_value': sol['total_weight']
+            })
+        else:
+            st.error("❌ Error al calcular el árbol de expansión mínima")
 
 
 def show_pert_cpm():
