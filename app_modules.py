@@ -740,28 +740,48 @@ def show_shortest_path():
     st.markdown("### 🗺️ Camino Más Corto")
     st.info("Define los nodos y aristas del grafo. El peso representa la distancia o costo.")
 
-    num_nodes = st.number_input("Número de nodos:", min_value=2, max_value=10, value=5, step=1)
+    pre = st.session_state.get('network_example')
+    if pre and pre.get('type') == 'shortest_path':
+        st.success("📥 Ejemplo precargado desde la biblioteca.")
+
+    default_nodes = pre['nodes'] if pre and pre.get('type') == 'shortest_path' else [chr(65+i) for i in range(5)]
+    default_edges = pre['edges'] if pre and pre.get('type') == 'shortest_path' else []
+    default_source = pre.get('source', default_nodes[0]) if pre and pre.get('type') == 'shortest_path' else None
+    default_target = pre.get('target', default_nodes[-1]) if pre and pre.get('type') == 'shortest_path' else None
+
+    num_nodes = st.number_input("Número de nodos:", min_value=2, max_value=10, value=len(default_nodes), step=1)
     node_names = []
     st.markdown("#### Nombres de nodos:")
     cols = st.columns(num_nodes)
     for i in range(num_nodes):
         with cols[i]:
-            name = st.text_input(f"Nodo {i+1}", value=chr(65+i), key=f"sp_node_{i}")
+            val = default_nodes[i] if i < len(default_nodes) else chr(65+i)
+            name = st.text_input(f"Nodo {i+1}", value=val, key=f"sp_node_{i}")
             node_names.append(name.strip())
 
     st.markdown("#### Aristas (conexiones):")
-    num_edges = st.number_input("Número de aristas:", min_value=1, max_value=30, value=6, step=1)
+    num_edges = st.number_input("Número de aristas:", min_value=1, max_value=30, value=max(len(default_edges), 1), step=1)
     edges = []
     for i in range(num_edges):
         c1, c2, c3 = st.columns(3)
-        with c1: src = st.selectbox(f"Desde", node_names, key=f"sp_src_{i}")
-        with c2: dst = st.selectbox(f"Hasta", node_names, key=f"sp_dst_{i}")
-        with c3: w   = st.number_input("Peso", value=1.0, min_value=0.1, key=f"sp_w_{i}")
+        de = default_edges[i] if i < len(default_edges) else (node_names[0], node_names[-1], 1.0)
+        si = node_names.index(de[0]) if de[0] in node_names else 0
+        di = node_names.index(de[1]) if de[1] in node_names else 0
+        with c1: src = st.selectbox(f"Desde", node_names, index=si, key=f"sp_src_{i}")
+        with c2: dst = st.selectbox(f"Hasta", node_names, index=di, key=f"sp_dst_{i}")
+        with c3: w   = st.number_input("Peso", value=float(de[2]), min_value=0.1, key=f"sp_w_{i}")
         edges.append((src, dst, w))
 
     c1, c2 = st.columns(2)
-    with c1: source = st.selectbox("Nodo origen:",  node_names, key="sp_source")
-    with c2: target = st.selectbox("Nodo destino:", node_names, index=len(node_names)-1, key="sp_target")
+    src_idx = node_names.index(default_source) if default_source and default_source in node_names else 0
+    tgt_idx = node_names.index(default_target) if default_target and default_target in node_names else len(node_names)-1
+    with c1: source = st.selectbox("Nodo origen:",  node_names, index=src_idx, key="sp_source")
+    with c2: target = st.selectbox("Nodo destino:", node_names, index=tgt_idx, key="sp_target")
+    col_btn1, col_btn2 = st.columns([3,1])
+    with col_btn2:
+        if pre and pre.get('type') == 'shortest_path' and st.button("🗑️ Limpiar", key="sp_clear"):
+            st.session_state.network_example = None
+            st.rerun()
 
     if st.button("🚀 Encontrar Camino Más Corto", type="primary"):
         import plotly.graph_objects as go
@@ -860,28 +880,48 @@ def show_maximum_flow():
     st.markdown("### 🌊 Flujo Máximo")
     st.info("Define la red con capacidades en cada arista.")
 
-    num_nodes = st.number_input("Número de nodos:", min_value=2, max_value=10, value=5, step=1)
+    pre = st.session_state.get('network_example')
+    if pre and pre.get('type') == 'max_flow':
+        st.success("📥 Ejemplo precargado desde la biblioteca.")
+
+    default_nodes = pre['nodes'] if pre and pre.get('type') == 'max_flow' else [chr(65+i) for i in range(5)]
+    default_edges = pre['edges'] if pre and pre.get('type') == 'max_flow' else []
+    default_source = pre.get('source', default_nodes[0]) if pre and pre.get('type') == 'max_flow' else None
+    default_sink   = pre.get('sink',   default_nodes[-1]) if pre and pre.get('type') == 'max_flow' else None
+
+    num_nodes = st.number_input("Número de nodos:", min_value=2, max_value=10, value=len(default_nodes), step=1)
     node_names = []
     st.markdown("#### Nombres de nodos:")
     cols = st.columns(num_nodes)
     for i in range(num_nodes):
         with cols[i]:
-            name = st.text_input(f"Nodo {i+1}", value=chr(65+i), key=f"mf_node_{i}")
+            val = default_nodes[i] if i < len(default_nodes) else chr(65+i)
+            name = st.text_input(f"Nodo {i+1}", value=val, key=f"mf_node_{i}")
             node_names.append(name.strip())
 
     st.markdown("#### Aristas con capacidades:")
-    num_edges = st.number_input("Número de aristas:", min_value=1, max_value=30, value=6, step=1)
+    num_edges = st.number_input("Número de aristas:", min_value=1, max_value=30, value=max(len(default_edges),1), step=1)
     edges = []
     for i in range(num_edges):
         c1, c2, c3 = st.columns(3)
-        with c1: src = st.selectbox("Desde", node_names, key=f"mf_src_{i}")
-        with c2: dst = st.selectbox("Hasta", node_names, key=f"mf_dst_{i}")
-        with c3: cap = st.number_input("Capacidad", value=10.0, min_value=0.1, key=f"mf_cap_{i}")
+        de = default_edges[i] if i < len(default_edges) else (node_names[0], node_names[-1], 10.0)
+        si = node_names.index(de[0]) if de[0] in node_names else 0
+        di = node_names.index(de[1]) if de[1] in node_names else 0
+        with c1: src = st.selectbox("Desde", node_names, index=si, key=f"mf_src_{i}")
+        with c2: dst = st.selectbox("Hasta", node_names, index=di, key=f"mf_dst_{i}")
+        with c3: cap = st.number_input("Capacidad", value=float(de[2]), min_value=0.1, key=f"mf_cap_{i}")
         edges.append((src, dst, cap))
 
+    src_idx  = node_names.index(default_source) if default_source and default_source in node_names else 0
+    sink_idx = node_names.index(default_sink)   if default_sink   and default_sink   in node_names else len(node_names)-1
     c1, c2 = st.columns(2)
-    with c1: source = st.selectbox("Nodo fuente (S):",   node_names, key="mf_source")
-    with c2: sink   = st.selectbox("Nodo sumidero (T):", node_names, index=len(node_names)-1, key="mf_sink")
+    with c1: source = st.selectbox("Nodo fuente (S):",   node_names, index=src_idx,  key="mf_source")
+    with c2: sink   = st.selectbox("Nodo sumidero (T):", node_names, index=sink_idx, key="mf_sink")
+    col_btn1, col_btn2 = st.columns([3,1])
+    with col_btn2:
+        if pre and pre.get('type') == 'max_flow' and st.button("🗑️ Limpiar", key="mf_clear"):
+            st.session_state.network_example = None
+            st.rerun()
 
     if st.button("🚀 Calcular Flujo Máximo", type="primary"):
         import plotly.graph_objects as go
@@ -985,24 +1025,40 @@ def show_minimum_spanning_tree():
     st.markdown("### 🌳 Árbol de Expansión Mínima")
     st.info("Define el grafo no dirigido. El árbol conectará todos los nodos con el menor costo total.")
 
-    num_nodes = st.number_input("Número de nodos:", min_value=2, max_value=10, value=5, step=1)
+    pre = st.session_state.get('network_example')
+    if pre and pre.get('type') == 'mst':
+        st.success("📥 Ejemplo precargado desde la biblioteca.")
+
+    default_nodes = pre['nodes'] if pre and pre.get('type') == 'mst' else [chr(65+i) for i in range(5)]
+    default_edges = pre['edges'] if pre and pre.get('type') == 'mst' else []
+
+    num_nodes = st.number_input("Número de nodos:", min_value=2, max_value=10, value=len(default_nodes), step=1)
     node_names = []
     st.markdown("#### Nombres de nodos:")
     cols = st.columns(num_nodes)
     for i in range(num_nodes):
         with cols[i]:
-            name = st.text_input(f"Nodo {i+1}", value=chr(65+i), key=f"mst_node_{i}")
+            val = default_nodes[i] if i < len(default_nodes) else chr(65+i)
+            name = st.text_input(f"Nodo {i+1}", value=val, key=f"mst_node_{i}")
             node_names.append(name.strip())
 
     st.markdown("#### Aristas (grafo no dirigido):")
-    num_edges = st.number_input("Número de aristas:", min_value=1, max_value=30, value=6, step=1)
+    num_edges = st.number_input("Número de aristas:", min_value=1, max_value=30, value=max(len(default_edges),1), step=1)
     edges = []
     for i in range(num_edges):
         c1, c2, c3 = st.columns(3)
-        with c1: src = st.selectbox("Nodo 1", node_names, key=f"mst_src_{i}")
-        with c2: dst = st.selectbox("Nodo 2", node_names, key=f"mst_dst_{i}")
-        with c3: w   = st.number_input("Peso", value=1.0, min_value=0.1, key=f"mst_w_{i}")
+        de = default_edges[i] if i < len(default_edges) else (node_names[0], node_names[-1], 1.0)
+        si = node_names.index(de[0]) if de[0] in node_names else 0
+        di = node_names.index(de[1]) if de[1] in node_names else 0
+        with c1: src = st.selectbox("Nodo 1", node_names, index=si, key=f"mst_src_{i}")
+        with c2: dst = st.selectbox("Nodo 2", node_names, index=di, key=f"mst_dst_{i}")
+        with c3: w   = st.number_input("Peso", value=float(de[2]), min_value=0.1, key=f"mst_w_{i}")
         edges.append((src, dst, w))
+    col_btn1, col_btn2 = st.columns([3,1])
+    with col_btn2:
+        if pre and pre.get('type') == 'mst' and st.button("🗑️ Limpiar", key="mst_clear"):
+            st.session_state.network_example = None
+            st.rerun()
 
     if st.button("🚀 Calcular Árbol de Expansión Mínima", type="primary"):
         import plotly.graph_objects as go
