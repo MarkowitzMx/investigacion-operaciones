@@ -148,6 +148,32 @@ def _show_integer_input(is_binary: bool):
     else:
         st.info("Variables: **enteras no negativas** (0, 1, 2, ...).")
 
+    # Mostrar ejemplo precargado desde biblioteca
+    pre = st.session_state.get('ip_problem_data')
+    if pre:
+        st.success("📥 Ejemplo precargado desde la biblioteca.")
+        with st.expander("👁️ Ver datos del ejemplo cargado"):
+            c_pre  = pre.get('c', [])
+            A_pre  = pre.get('A', [])
+            b_pre  = pre.get('b', [])
+            ct_pre = pre.get('constraint_types', [])
+            vn_pre = pre.get('var_names', [f"x{i+1}" for i in range(len(c_pre))])
+            obj    = "Maximizar" if pre.get('maximize', True) else "Minimizar"
+            terms  = " + ".join([f"{c_pre[i]:g}·{vn_pre[i]}" for i in range(len(c_pre))])
+            st.code(f"{obj} Z = {terms}")
+            rows = []
+            for i in range(len(b_pre)):
+                r = " + ".join([f"{A_pre[i][j]:g}·{vn_pre[j]}" for j in range(len(c_pre))])
+                rows.append({"Restricción": f"R{i+1}", "Expresión": f"{r} {ct_pre[i]} {b_pre[i]:g}"})
+            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        col1, col2 = st.columns([3,1])
+        with col2:
+            if st.button("🗑️ Limpiar ejemplo", key="ip_clear"):
+                st.session_state.ip_problem_data = None
+                st.session_state.ip_solution     = None
+                st.rerun()
+        st.info("👆 El ejemplo ya está guardado. Ve directamente a la pestaña **Resolver**.")
+
     tab1, tab2, tab3 = st.tabs(["Definir Problema", "Resolver", "Resultados"])
 
     # ── Definir ──────────────────────────────────────────────────
