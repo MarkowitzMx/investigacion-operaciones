@@ -804,14 +804,7 @@ def show_shortest_path():
             G = nx.DiGraph()
             for src2, dst2, w2 in edges:
                 G.add_edge(src2, dst2, weight=w2)
-            try:
-                # Layout jerárquico: nodos por niveles de izquierda a derecha
-                for layer, nodes in enumerate(nx.topological_generations(G)):
-                    for i, node in enumerate(sorted(nodes)):
-                        G.nodes[node]['layer'] = layer
-                pos = nx.multipartite_layout(G, subset_key='layer', scale=2)
-            except Exception:
-                pos = nx.shell_layout(G)
+            pos = nx.spring_layout(G, seed=42)
 
             path_edges = set(zip(path[:-1], path[1:]))
 
@@ -948,14 +941,7 @@ def show_maximum_flow():
             G = nx.DiGraph()
             for src2, dst2, cap2 in edges:
                 G.add_edge(src2, dst2, capacity=cap2)
-            try:
-                # Layout jerárquico: nodos por niveles de izquierda a derecha
-                for layer, nodes in enumerate(nx.topological_generations(G)):
-                    for i, node in enumerate(sorted(nodes)):
-                        G.nodes[node]['layer'] = layer
-                pos = nx.multipartite_layout(G, subset_key='layer', scale=2)
-            except Exception:
-                pos = nx.shell_layout(G)
+            pos = nx.spring_layout(G, seed=42)
 
             flow_dict = sol['flow_dict']
 
@@ -1095,14 +1081,7 @@ def show_minimum_spanning_tree():
             G = nx.Graph()
             for src2, dst2, w2 in edges:
                 G.add_edge(src2, dst2, weight=w2)
-            try:
-                # Layout jerárquico: nodos por niveles de izquierda a derecha
-                for layer, nodes in enumerate(nx.topological_generations(G)):
-                    for i, node in enumerate(sorted(nodes)):
-                        G.nodes[node]['layer'] = layer
-                pos = nx.multipartite_layout(G, subset_key='layer', scale=2)
-            except Exception:
-                pos = nx.shell_layout(G)
+            pos = nx.spring_layout(G, seed=42)
 
             mst_edges = set(
                 (e['from'], e['to']) for e in sol['edges']
