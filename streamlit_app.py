@@ -25,7 +25,7 @@ from app_modules import (show_duality_sensitivity, show_integer_programming,
  
 # Configuración de la página
 st.set_page_config(
-    page_title="Sistema de Investigación de Operaciones",
+    page_title="Herramienta para Investigación de Operaciones",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -301,10 +301,10 @@ def main():
  
     # Header
     st.markdown(
-        '<h1 class="main-header">📊 Sistema de Investigación de Operaciones</h1>',
+        '<h1 class="main-header">📊 Herramienta para Investigación de Operaciones</h1>',
         unsafe_allow_html=True
     )
-    st.markdown("### Universidad Autónoma de Sinaloa - Ingeniería en Software")
+    st.markdown("### Universidad Autónoma de Sinaloa - Ingeniería en Desarrollo de Software")
     st.markdown("👨‍💻 Desarrollado por: **Cristóbal Lemus**")
     st.caption(f"📅 Fecha actual: {datetime.now().strftime('%d de %B de %Y')}")
     st.markdown("---")
