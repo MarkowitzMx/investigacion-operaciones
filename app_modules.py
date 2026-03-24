@@ -1570,30 +1570,45 @@ def show_history():
 
 
 def show_manual():
-    st.markdown("## 📖 Manual de Ejercicios")
-    st.markdown("Bienvenido al manual práctico de la **Herramienta de Investigación de Operaciones**. Cada sección contiene 2 ejercicios con datos listos para ingresar y la solución esperada para verificar tu resultado.")
-    st.markdown("---")
+    st.markdown("## 📖 Kit Práctico — Manual de Investigación de Operaciones")
+    st.markdown("Este manual te lleva de la mano en cada módulo: teoría breve, ejercicio guiado y verificación de resultados.")
 
-    # ── NAVEGACIÓN RÁPIDA ─────────────────────────────────────────
-    st.markdown("### 🗺️ Navegación Rápida")
-    st.info("Selecciona un tema del menú lateral → ingresa los datos del ejercicio → resuelve → verifica con la solución esperada.")
+    # Progreso
+    if 'manual_completados' not in st.session_state:
+        st.session_state.manual_completados = set()
+    total = 11
+    completados = len(st.session_state.manual_completados)
+    st.progress(completados / total, text=f"Progreso: {completados}/{total} ejercicios completados")
     st.markdown("---")
 
     # ── 1. SIMPLEX ────────────────────────────────────────────────
     with st.expander("📈 1. Programación Lineal — Método Simplex"):
-        st.markdown("#### Ejercicio 1.1 — Producción de muebles")
+        st.markdown("### 📚 Teoría")
         st.markdown("""
-**Enunciado:** Una fábrica produce sillas y mesas. Cada silla genera $5 de utilidad y cada mesa $8.
-Se dispone de 16 horas de carpintería y 12 horas de pintura.
+El **Método Simplex** es un algoritmo iterativo para resolver problemas de programación lineal.
+Parte de una solución básica factible y se mueve entre vértices del poliedro factible mejorando
+el valor de la función objetivo en cada iteración hasta alcanzar el óptimo.
+
+**Forma estándar:**
+- Función objetivo: Maximizar/Minimizar Z = c₁x₁ + c₂x₂ + ... + cₙxₙ
+- Restricciones: Aᵢx ≤ bᵢ (se agregan variables de holgura sᵢ ≥ 0)
+- No negatividad: xᵢ ≥ 0
+
+**Criterio de entrada:** variable con coeficiente más negativo en la fila Z.
+**Criterio de salida:** razón mínima positiva bᵢ/aᵢⱼ (prueba de la razón mínima).
+        """)
+        st.markdown("### 🏋️ Ejercicio guiado")
+        st.markdown("""
+**Problema:** Una fábrica produce sillas (x1) y mesas (x2).
+Cada silla genera \$5 y cada mesa \$8 de utilidad.
 
 | Recurso | Silla | Mesa | Disponible |
 |---------|-------|------|------------|
-| Carpintería | 2 | 4 | 16 hrs |
-| Pintura | 3 | 2 | 12 hrs |
+| Carpintería | 2 hrs | 4 hrs | 16 hrs |
+| Pintura | 3 hrs | 2 hrs | 12 hrs |
 
 **¿Cuántas sillas y mesas producir para maximizar la utilidad?**
         """)
-        st.markdown("**📥 Ingresa en Programación Lineal → Método Simplex:**")
         st.code("""
 Maximizar Z = 5x1 + 8x2
 s.a.
@@ -1601,66 +1616,52 @@ s.a.
   3x1 + 2x2 <= 12
   x1, x2 >= 0
         """)
-        st.success("✅ Solución esperada: x1 = 2, x2 = 3, Z = 34")
-
-        st.markdown("---")
-        st.markdown("#### Ejercicio 1.2 — Mezcla de productos")
-        st.markdown("""
-**Enunciado:** Una empresa produce dos productos A y B con utilidades de $3 y $5 respectivamente.
-Tiene restricciones de máquina, mano de obra y demanda.
-
-| Recurso | A | B | Disponible |
-|---------|---|---|------------|
-| Máquina | 2 | 1 | 20 hrs |
-| Mano de obra | 1 | 2 | 16 hrs |
-| Demanda A | 1 | 0 | 8 uds |
-        """)
-        st.markdown("**📥 Ingresa en Programación Lineal → Método Simplex:**")
-        st.code("""
-Maximizar Z = 3x1 + 5x2
-s.a.
-  2x1 + 1x2 <= 20
-  1x1 + 2x2 <= 16
-  1x1 + 0x2 <= 8
-  x1, x2 >= 0
-        """)
-        st.success("✅ Solución esperada: x1 = 8, x2 = 4, Z = 44")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📥 Cargar en Programación Lineal", key="man_sp1"):
+                import numpy as np
+                st.session_state.problem_data = {
+                    'c': np.array([5.0, 8.0]),
+                    'A': np.array([[2.0,4.0],[3.0,2.0]]),
+                    'b': np.array([16.0, 12.0]),
+                    'maximize': True,
+                    'constraint_types': ['<=','<='],
+                    'var_names': ['x1','x2']
+                }
+                st.success("✅ Cargado. Ve a 📈 Programación Lineal → Simplex")
+        with col2:
+            if st.button("✅ Marcar completado", key="man_sp1_done"):
+                st.session_state.manual_completados.add("simplex1")
+                st.success("¡Ejercicio completado! 🎉")
+        st.info("**Solución esperada:** x1 = 2, x2 = 3, Z = $34")
 
     # ── 2. GRÁFICO ────────────────────────────────────────────────
     with st.expander("📈 2. Programación Lineal — Método Gráfico"):
-        st.markdown("#### Ejercicio 2.1 — Dieta económica")
+        st.markdown("### 📚 Teoría")
         st.markdown("""
-**Enunciado:** Minimizar el costo de una dieta con 2 alimentos.
-Cada unidad de A cuesta $2 y de B cuesta $3.
-Se requiere al menos 6 unidades de proteína y 8 de carbohidratos.
+El **Método Gráfico** resuelve problemas de PL con **exactamente 2 variables**.
+Consiste en graficar las restricciones como semiplanos, identificar la **región factible**
+(intersección de todos los semiplanos) y evaluar la función objetivo en cada **punto esquina**
+(vértice del polígono factible). El óptimo siempre se encuentra en uno de estos vértices.
 
-| Nutriente | A | B | Mínimo |
-|-----------|---|---|--------|
-| Proteína | 1 | 2 | 6 |
-| Carbohidratos | 4 | 2 | 8 |
+**Pasos:**
+1. Graficar cada restricción como línea recta
+2. Identificar la región factible
+3. Encontrar los puntos esquina (intersecciones)
+4. Evaluar Z en cada punto esquina
+5. Seleccionar el mayor (maximizar) o menor (minimizar)
         """)
-        st.markdown("**📥 Ingresa en Programación Lineal → Método Gráfico:**")
-        st.code("""
-Minimizar Z = 2x1 + 3x2
-s.a.
-  1x1 + 2x2 >= 6
-  4x1 + 2x2 >= 8
-  x1, x2 >= 0
-        """)
-        st.success("✅ Solución esperada: x1 = 1, x2 = 2.5, Z = 9.5")
-
-        st.markdown("---")
-        st.markdown("#### Ejercicio 2.2 — Inversión en proyectos")
+        st.markdown("### 🏋️ Ejercicio guiado")
         st.markdown("""
-**Enunciado:** Maximizar el retorno de inversión en dos proyectos.
-El proyecto A genera $4 y el B genera $5 por unidad invertida.
+**Problema:** Maximizar el retorno de inversión en dos proyectos A (x1) y B (x2).
 
-| Restricción | A | B | Límite |
-|-------------|---|---|--------|
+| Restricción | x1 | x2 | Límite |
+|-------------|----|----|--------|
 | Capital | 6 | 4 | 24 |
 | Tiempo | 1 | 2 | 6 |
+
+Retorno: \$4 por x1 y \$5 por x2.
         """)
-        st.markdown("**📥 Ingresa en Programación Lineal → Método Gráfico:**")
         st.code("""
 Maximizar Z = 4x1 + 5x2
 s.a.
@@ -1668,23 +1669,50 @@ s.a.
   1x1 + 2x2 <= 6
   x1, x2 >= 0
         """)
-        st.success("✅ Solución esperada: x1 = 3, x2 = 1.5, Z = 19.5")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📥 Cargar en Programación Lineal", key="man_gr1"):
+                import numpy as np
+                st.session_state.problem_data = {
+                    'c': np.array([4.0, 5.0]),
+                    'A': np.array([[6.0,4.0],[1.0,2.0]]),
+                    'b': np.array([24.0, 6.0]),
+                    'maximize': True,
+                    'constraint_types': ['<=','<='],
+                    'var_names': ['x1','x2']
+                }
+                st.success("✅ Cargado. Ve a 📈 Programación Lineal → Método Gráfico")
+        with col2:
+            if st.button("✅ Marcar completado", key="man_gr1_done"):
+                st.session_state.manual_completados.add("grafico1")
+                st.success("¡Ejercicio completado! 🎉")
+        st.info("**Solución esperada:** x1 = 3, x2 = 1.5, Z = $19.5")
 
     # ── 3. DOS FASES ──────────────────────────────────────────────
     with st.expander("📈 3. Programación Lineal — Método de las Dos Fases"):
-        st.markdown("#### Ejercicio 3.1 — Minimización con >= ")
+        st.markdown("### 📚 Teoría")
         st.markdown("""
-**Enunciado:** Una empresa quiere minimizar costos de producción de dos productos.
-Debe cumplir cuotas mínimas de producción.
+El **Método de las Dos Fases** se usa cuando el problema tiene restricciones **≥** o **=**,
+lo que impide obtener una base inicial factible directamente.
+
+**Fase 1:** Se agregan variables artificiales (aᵢ ≥ 0) y se minimiza su suma.
+Si el óptimo de Fase 1 es **Z = 0**, existe solución básica factible y se continúa.
+Si Z > 0, el problema es **infactible**.
+
+**Fase 2:** Se elimina la función objetivo artificial y se optimiza con la función original,
+partiendo de la base factible encontrada en Fase 1.
+        """)
+        st.markdown("### 🏋️ Ejercicio guiado")
+        st.markdown("""
+**Problema:** Minimizar costos de producción cumpliendo cuotas mínimas.
 
 | Restricción | x1 | x2 | Mínimo |
 |-------------|----|----|--------|
 | Cuota 1 | 2 | 3 | 36 |
 | Cuota 2 | 3 | 6 | 60 |
 
-Costo: $2000 por x1 y $500 por x2.
+Costos: \$2,000 por x1 y \$500 por x2.
         """)
-        st.markdown("**📥 Ingresa en Programación Lineal → Dos Fases:**")
         st.code("""
 Minimizar Z = 2000x1 + 500x2
 s.a.
@@ -1692,37 +1720,49 @@ s.a.
   3x1 + 6x2 >= 60
   x1, x2 >= 0
         """)
-        st.success("✅ Solución esperada: x1 = 12, x2 = 4, Z = 26,000")
-
-        st.markdown("---")
-        st.markdown("#### Ejercicio 3.2 — Mezcla con restricción de igualdad")
-        st.markdown("""
-**Enunciado:** Minimizar el costo de mezcla que debe contener exactamente 100 litros.
-Se dispone de dos componentes con diferentes costos y concentraciones.
-
-| Restricción | x1 | x2 | Valor |
-|-------------|----|----|-------|
-| Total litros | 1 | 1 | = 100 |
-| Concentración mín | 3 | 1 | >= 150 |
-        """)
-        st.markdown("**📥 Ingresa en Programación Lineal → Dos Fases:**")
-        st.code("""
-Minimizar Z = 4x1 + 6x2
-s.a.
-  1x1 + 1x2  =  100
-  3x1 + 1x2 >= 150
-  x1, x2 >= 0
-        """)
-        st.success("✅ Solución esperada: x1 = 25, x2 = 75, Z = 550")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📥 Cargar en Programación Lineal", key="man_2f1"):
+                import numpy as np
+                st.session_state.problem_data = {
+                    'c': np.array([2000.0, 500.0]),
+                    'A': np.array([[2.0,3.0],[3.0,6.0]]),
+                    'b': np.array([36.0, 60.0]),
+                    'maximize': False,
+                    'constraint_types': ['>=','>='],
+                    'var_names': ['x1','x2']
+                }
+                st.success("✅ Cargado. Ve a 📈 Programación Lineal → Dos Fases")
+        with col2:
+            if st.button("✅ Marcar completado", key="man_2f1_done"):
+                st.session_state.manual_completados.add("dosfases1")
+                st.success("¡Ejercicio completado! 🎉")
+        st.info("**Solución esperada:** x1 = 12, x2 = 4, Z = $26,000")
 
     # ── 4. DUALIDAD ───────────────────────────────────────────────
     with st.expander("🔄 4. Dualidad y Sensibilidad"):
-        st.markdown("#### Ejercicio 4.1 — Problema Dual")
+        st.markdown("### 📚 Teoría")
         st.markdown("""
-**Enunciado:** Resuelve el siguiente problema y genera su dual desde el módulo de Dualidad.
+Todo problema de PL (problema **primal**) tiene asociado un **problema dual**.
+Si el primal es de maximización, el dual es de minimización y viceversa.
 
+**Reglas de conversión Primal → Dual:**
+- Cada restricción del primal genera una variable dual (yᵢ)
+- Cada variable del primal genera una restricción dual
+- Los coeficientes de la función objetivo y el lado derecho se intercambian
+
+**Teorema de Dualidad Fuerte:** Si el primal tiene solución óptima finita,
+el dual también la tiene y **Z_primal = W_dual**.
+
+**Precios sombra:** El valor de yᵢ en el óptimo indica cuánto mejora Z
+si se incrementa en 1 unidad el lado derecho de la restricción i.
         """)
-        st.markdown("**📥 Primero resuelve en Programación Lineal → Simplex:**")
+        st.markdown("### 🏋️ Ejercicio guiado")
+        st.markdown("""
+**Pasos:**
+1. Resuelve el siguiente problema en 📈 Programación Lineal → Simplex
+2. Luego ve a 🔄 Dualidad → Análisis Dual y genera el problema dual
+        """)
         st.code("""
 Maximizar Z = 5x1 + 4x2
 s.a.
@@ -1730,73 +1770,99 @@ s.a.
   1x1 + 2x2 <= 6
   x1, x2 >= 0
         """)
-        st.markdown("**Luego ve a 🔄 Dualidad y Sensibilidad → Análisis Dual**")
-        st.success("✅ Dual: Minimizar W = 24y1 + 6y2  |  Óptimo dual = 21")
-
-        st.markdown("---")
-        st.markdown("#### Ejercicio 4.2 — Análisis de Sensibilidad")
-        st.markdown("""
-**Enunciado:** Resuelve el problema de producción de muebles y analiza cuánto puede cambiar el coeficiente de x1 sin cambiar la solución óptima.
-        """)
-        st.markdown("**📥 Resuelve en Programación Lineal → Simplex:**")
-        st.code("""
-Maximizar Z = 3x1 + 5x2
-s.a.
-  2x1 + 1x2 <= 20
-  1x1 + 2x2 <= 16
-  x1, x2 >= 0
-        """)
-        st.markdown("**Luego ve a 🔄 Dualidad → Sensibilidad**")
-        st.success("✅ Solución base: x1=8, x2=4, Z=44  |  Analiza rangos de c1 y c2")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📥 Cargar problema primal", key="man_du1"):
+                import numpy as np
+                st.session_state.problem_data = {
+                    'c': np.array([5.0, 4.0]),
+                    'A': np.array([[6.0,4.0],[1.0,2.0]]),
+                    'b': np.array([24.0, 6.0]),
+                    'maximize': True,
+                    'constraint_types': ['<=','<='],
+                    'var_names': ['x1','x2']
+                }
+                st.success("✅ Cargado. Ve a 📈 Simplex → luego 🔄 Dualidad")
+        with col2:
+            if st.button("✅ Marcar completado", key="man_du1_done"):
+                st.session_state.manual_completados.add("dualidad1")
+                st.success("¡Ejercicio completado! 🎉")
+        st.info("**Solución esperada:** Primal Z = 21 | Dual W = 21 (Dualidad fuerte ✅)")
 
     # ── 5. PROGRAMACIÓN ENTERA ────────────────────────────────────
     with st.expander("🔢 5. Programación Entera"):
-        st.markdown("#### Ejercicio 5.1 — Branch and Bound")
+        st.markdown("### 📚 Teoría")
         st.markdown("""
-**Enunciado:** Una empresa selecciona proyectos enteros (no fracciones).
-Maximizar utilidad sujeto a restricciones de presupuesto y personal.
+La **Programación Entera (PE)** exige que algunas o todas las variables de decisión
+tomen valores **enteros**. Esto la hace más compleja que la PL continua.
+
+**Branch and Bound:** Divide el problema en subproblemas (ramas) acotando el espacio
+de búsqueda. En cada nodo se resuelve una relajación continua; si la solución no es entera,
+se ramifica sobre la variable fraccionaria.
+
+**Cortes de Gomory:** Agrega restricciones adicionales (cortes) que eliminan soluciones
+fraccionarias sin eliminar soluciones enteras factibles.
+
+**Problema de la Mochila:** Caso especial donde se seleccionan ítems (0 o 1)
+maximizando el valor sin exceder una capacidad.
+        """)
+        st.markdown("### 🏋️ Ejercicio guiado")
+        st.markdown("""
+**Problema:** Seleccionar proyectos enteros maximizando utilidad con restricción de presupuesto.
 
 | Recurso | x1 | x2 | Disponible |
 |---------|----|----|------------|
 | Presupuesto | 2 | 4 | 16 |
 | Personal | 3 | 2 | 12 |
         """)
-        st.markdown("**📥 Ingresa en Programación Entera → Branch and Bound:**")
         st.code("""
-Maximizar Z = 5x1 + 8x2
+Maximizar Z = 5x1 + 8x2  (enteras)
 s.a.
   2x1 + 4x2 <= 16
   3x1 + 2x2 <= 12
   x1, x2 >= 0 enteras
         """)
-        st.success("✅ Solución esperada: x1 = 2, x2 = 3, Z = 34")
-
-        st.markdown("---")
-        st.markdown("#### Ejercicio 5.2 — Problema de la Mochila")
-        st.markdown("""
-**Enunciado:** Selecciona objetos para maximizar el valor total sin exceder capacidad de 50 kg.
-
-| Objeto | Valor | Peso |
-|--------|-------|------|
-| 1 | 60 | 10 |
-| 2 | 100 | 20 |
-| 3 | 120 | 30 |
-| 4 | 80 | 15 |
-| 5 | 90 | 25 |
-        """)
-        st.markdown("**📥 Ingresa en Programación Entera → Problema de la Mochila:**")
-        st.success("✅ Solución esperada: objetos 1,2,4 → Valor = 240, Peso = 45")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📥 Cargar en Prog. Entera", key="man_pe1"):
+                import numpy as np
+                st.session_state.ip_problem_data = {
+                    'c': np.array([5.0, 8.0]),
+                    'A': np.array([[2.0,4.0],[3.0,2.0]]),
+                    'b': np.array([16.0, 12.0]),
+                    'maximize': True,
+                    'constraint_types': ['<=','<='],
+                    'var_names': ['x1','x2'],
+                    'is_binary': False,
+                    'method_name': 'Branch and Bound'
+                }
+                st.success("✅ Cargado. Ve a 🔢 Programación Entera → Resolver")
+        with col2:
+            if st.button("✅ Marcar completado", key="man_pe1_done"):
+                st.session_state.manual_completados.add("entera1")
+                st.success("¡Ejercicio completado! 🎉")
+        st.info("**Solución esperada:** x1 = 2, x2 = 3, Z = 34")
 
     # ── 6. TRANSPORTE ─────────────────────────────────────────────
     with st.expander("🚚 6. Problema de Transporte"):
-        st.markdown("#### Ejercicio 6.1 — Distribución 3×3")
+        st.markdown("### 📚 Teoría")
         st.markdown("""
-**Enunciado:** Minimizar el costo de distribuir productos desde 3 almacenes a 3 tiendas.
+El **Problema de Transporte** busca minimizar el costo total de enviar productos
+desde m **orígenes** (con oferta sᵢ) a n **destinos** (con demanda dⱼ).
 
-**Oferta:** O1=120, O2=80, O3=80  
-**Demanda:** D1=150, D2=70, D3=60
+**Condición de balance:** Σsᵢ = Σdⱼ (si no se cumple, se agrega origen/destino ficticio).
 
-**Matriz de costos:**
+**Métodos de solución inicial:**
+- **Esquina Noroeste:** Asigna comenzando desde la celda (1,1), simple pero no óptimo.
+- **Método de Vogel:** Calcula penalizaciones por fila/columna, obtiene mejor solución inicial.
+
+**Optimización:** Método MODI (Modified Distribution) verifica optimalidad y mejora la solución.
+        """)
+        st.markdown("### 🏋️ Ejercicio guiado")
+        st.markdown("""
+**Problema:** Distribuir productos desde 3 almacenes a 3 tiendas minimizando costos.
+
+**Oferta:** O1=120, O2=80, O3=80 | **Demanda:** D1=150, D2=70, D3=60
 
 | | D1 | D2 | D3 |
 |-|----|----|----|
@@ -1804,34 +1870,42 @@ s.a.
 | O2 | 5 | 4 | 8 |
 | O3 | 5 | 6 | 8 |
         """)
-        st.markdown("**📥 Ingresa en Análisis de Redes → Transporte:**")
-        st.success("✅ Costo mínimo esperado: $710 (Esquina Noroeste) o menos con Vogel")
-
-        st.markdown("---")
-        st.markdown("#### Ejercicio 6.2 — Red de distribución 2×3")
-        st.markdown("""
-**Enunciado:** Dos fábricas abastecen a tres tiendas.
-
-**Oferta:** F1=200, F2=300  
-**Demanda:** T1=150, T2=200, T3=150
-
-**Costos de envío:**
-
-| | T1 | T2 | T3 |
-|-|----|----|----|
-| F1 | 4 | 8 | 8 |
-| F2 | 16 | 24 | 16 |
-        """)
-        st.markdown("**📥 Ingresa en Análisis de Redes → Transporte:**")
-        st.success("✅ Costo mínimo esperado: $3,200")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📥 Cargar en Transporte", key="man_tr1"):
+                st.session_state.transport_example = {
+                    'no': 3, 'nd': 3,
+                    'supply': [120.0, 80.0, 80.0],
+                    'demand': [150.0, 70.0, 60.0],
+                    'costs': [[2.0,3.0,1.0],[5.0,4.0,8.0],[5.0,6.0,8.0]],
+                    'description': "Ejercicio Manual — Distribución 3x3"
+                }
+                st.success("✅ Cargado. Ve a 🌐 Análisis de Redes → Transporte")
+        with col2:
+            if st.button("✅ Marcar completado", key="man_tr1_done"):
+                st.session_state.manual_completados.add("transporte1")
+                st.success("¡Ejercicio completado! 🎉")
+        st.info("**Costo mínimo esperado:** $710")
 
     # ── 7. ASIGNACIÓN ─────────────────────────────────────────────
     with st.expander("👥 7. Problema de Asignación"):
-        st.markdown("#### Ejercicio 7.1 — Minimizar tiempo")
+        st.markdown("### 📚 Teoría")
         st.markdown("""
-**Enunciado:** Asignar 4 trabajadores a 4 tareas minimizando el tiempo total.
+El **Problema de Asignación** asigna n agentes a n tareas de forma **uno a uno**
+minimizando el costo total (o maximizando el beneficio).
 
-**Matriz de tiempos (horas):**
+**Algoritmo Húngaro (Método de Kuhn-Munkres):**
+1. Restar el mínimo de cada fila
+2. Restar el mínimo de cada columna
+3. Cubrir todos los ceros con el mínimo número de líneas
+4. Si el número de líneas = n → solución óptima encontrada
+5. Si no, ajustar la matriz y repetir
+
+**Para maximizar:** Se convierte restando cada elemento del máximo de la matriz.
+        """)
+        st.markdown("### 🏋️ Ejercicio guiado")
+        st.markdown("""
+**Problema:** Asignar 4 trabajadores a 4 tareas minimizando tiempo total.
 
 | | T1 | T2 | T3 | T4 |
 |-|----|----|----|-----|
@@ -1840,73 +1914,82 @@ s.a.
 | W3 | 5 | 8 | 1 | 8 |
 | W4 | 7 | 6 | 9 | 4 |
         """)
-        st.markdown("**📥 Ingresa en Análisis de Redes → Asignación → Minimizar:**")
-        st.success("✅ Asignación óptima: W1→T2, W2→T3, W3→T3, W4→T4 | Tiempo = 13")
-
-        st.markdown("---")
-        st.markdown("#### Ejercicio 7.2 — Maximizar beneficio")
-        st.markdown("""
-**Enunciado:** Asignar 3 vendedores a 3 regiones maximizando ventas totales.
-
-**Matriz de ventas ($000):**
-
-| | R1 | R2 | R3 |
-|-|----|----|----|
-| V1 | 10 | 5 | 8 |
-| V2 | 6 | 7 | 9 |
-| V3 | 4 | 8 | 6 |
-        """)
-        st.markdown("**📥 Ingresa en Análisis de Redes → Asignación → Maximizar:**")
-        st.success("✅ Asignación óptima: V1→R1, V2→R3, V3→R2 | Ventas = $27,000")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📥 Cargar en Asignación", key="man_as1"):
+                st.session_state.assignment_example = {
+                    'size': 4, 'maximize': False,
+                    'costs': [[9.0,2.0,7.0,8.0],[6.0,4.0,3.0,7.0],
+                              [5.0,8.0,1.0,8.0],[7.0,6.0,9.0,4.0]],
+                    'description': "Ejercicio Manual — Asignación 4x4"
+                }
+                st.success("✅ Cargado. Ve a 🌐 Análisis de Redes → Asignación")
+        with col2:
+            if st.button("✅ Marcar completado", key="man_as1_done"):
+                st.session_state.manual_completados.add("asignacion1")
+                st.success("¡Ejercicio completado! 🎉")
+        st.info("**Tiempo mínimo esperado:** 13 horas")
 
     # ── 8. CAMINO MÁS CORTO ───────────────────────────────────────
     with st.expander("🗺️ 8. Camino más Corto"):
-        st.markdown("#### Ejercicio 8.1 — Red de ciudades")
+        st.markdown("### 📚 Teoría")
         st.markdown("""
-**Enunciado:** Encontrar la ruta más corta entre la ciudad A y la ciudad D.
+El **Algoritmo de Dijkstra** encuentra la ruta de menor costo desde un nodo origen
+a todos los demás nodos en un grafo con pesos **no negativos**.
 
-**Conexiones:**
+**Pasos:**
+1. Asignar distancia 0 al origen e ∞ a los demás nodos
+2. Marcar el nodo con menor distancia como visitado
+3. Actualizar distancias de sus vecinos: d(v) = min(d(v), d(u) + w(u,v))
+4. Repetir hasta visitar todos los nodos
 
-| Desde | Hasta | Distancia (km) |
-|-------|-------|----------------|
+**Complejidad:** O(n²) básico, O(m log n) con cola de prioridad.
+        """)
+        st.markdown("### 🏋️ Ejercicio guiado")
+        st.markdown("""
+**Problema:** Encontrar la ruta más corta de A a D en la siguiente red.
+
+| Desde | Hasta | Distancia |
+|-------|-------|-----------|
 | A | B | 4 |
 | A | C | 2 |
 | C | B | 1 |
 | B | D | 3 |
 | C | D | 7 |
         """)
-        st.markdown("**📥 Ingresa en Análisis de Redes → Camino más Corto:**")
-        st.markdown("Origen: **A** | Destino: **D**")
-        st.success("✅ Ruta óptima: A → C → B → D | Distancia = 6 km")
-
-        st.markdown("---")
-        st.markdown("#### Ejercicio 8.2 — Red de distribución")
-        st.markdown("""
-**Enunciado:** Encontrar la ruta de menor costo desde S hasta T.
-
-**Conexiones:**
-
-| Desde | Hasta | Costo |
-|-------|-------|-------|
-| S | A | 10 |
-| S | B | 8 |
-| A | C | 5 |
-| B | C | 3 |
-| B | T | 7 |
-| C | T | 6 |
-| A | T | 15 |
-        """)
-        st.markdown("**📥 Ingresa en Análisis de Redes → Camino más Corto:**")
-        st.markdown("Origen: **S** | Destino: **T**")
-        st.success("✅ Ruta óptima: S → B → C → T | Costo = 17")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📥 Cargar en Camino más Corto", key="man_sp1b"):
+                st.session_state.network_example = {
+                    'type': 'shortest_path',
+                    'nodes': ['A','B','C','D'],
+                    'edges': [('A','B',4),('A','C',2),('C','B',1),('B','D',3),('C','D',7)],
+                    'source': 'A', 'target': 'D',
+                    'description': "Ejercicio Manual"
+                }
+                st.success("✅ Cargado. Ve a 🌐 Análisis de Redes → Camino más Corto")
+        with col2:
+            if st.button("✅ Marcar completado", key="man_sp1b_done"):
+                st.session_state.manual_completados.add("camino1")
+                st.success("¡Ejercicio completado! 🎉")
+        st.info("**Ruta óptima:** A → C → B → D | Distancia = 6")
 
     # ── 9. FLUJO MÁXIMO ───────────────────────────────────────────
     with st.expander("🌊 9. Flujo Máximo"):
-        st.markdown("#### Ejercicio 9.1 — Red de tuberías")
+        st.markdown("### 📚 Teoría")
         st.markdown("""
-**Enunciado:** Determinar el flujo máximo de agua desde A (fuente) hasta E (sumidero).
+El **Algoritmo de Ford-Fulkerson** encuentra el flujo máximo desde una fuente S
+hasta un sumidero T en una red con capacidades en las aristas.
 
-**Red con capacidades:**
+**Concepto clave — Camino aumentante:** Cualquier ruta de S a T con capacidad residual > 0.
+El algoritmo busca caminos aumentantes y envía flujo por ellos hasta que no existan más.
+
+**Teorema Max-Flow Min-Cut:** El flujo máximo es igual a la capacidad del corte mínimo
+(conjunto de aristas que al eliminarse desconecta S de T).
+        """)
+        st.markdown("### 🏋️ Ejercicio guiado")
+        st.markdown("""
+**Problema:** Determinar el flujo máximo de A (fuente) a E (sumidero).
 
 | Desde | Hasta | Capacidad |
 |-------|-------|-----------|
@@ -1918,42 +2001,49 @@ s.a.
 | C | E | 6 |
 | D | E | 9 |
         """)
-        st.markdown("**📥 Ingresa en Análisis de Redes → Flujo Máximo:**")
-        st.markdown("Fuente: **A** | Sumidero: **E**")
-        st.success("✅ Flujo máximo = 15 unidades")
-
-        st.markdown("---")
-        st.markdown("#### Ejercicio 9.2 — Red de comunicaciones")
-        st.markdown("""
-**Enunciado:** Maximizar el flujo de datos desde S hasta T en una red de comunicaciones.
-
-**Red con capacidades (Mbps):**
-
-| Desde | Hasta | Capacidad |
-|-------|-------|-----------|
-| S | A | 15 |
-| S | B | 10 |
-| A | C | 12 |
-| A | D | 8 |
-| B | C | 5 |
-| B | D | 10 |
-| C | T | 15 |
-| D | T | 12 |
-        """)
-        st.markdown("**📥 Ingresa en Análisis de Redes → Flujo Máximo:**")
-        st.markdown("Fuente: **S** | Sumidero: **T**")
-        st.success("✅ Flujo máximo = 25 Mbps")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📥 Cargar en Flujo Máximo", key="man_mf1"):
+                st.session_state.network_example = {
+                    'type': 'max_flow',
+                    'nodes': ['A','B','C','D','E'],
+                    'edges': [('A','B',10),('A','C',8),('B','D',5),
+                              ('B','C',3),('C','D',7),('C','E',6),('D','E',9)],
+                    'source': 'A', 'sink': 'E',
+                    'description': "Ejercicio Manual"
+                }
+                st.success("✅ Cargado. Ve a 🌐 Análisis de Redes → Flujo Máximo")
+        with col2:
+            if st.button("✅ Marcar completado", key="man_mf1_done"):
+                st.session_state.manual_completados.add("flujo1")
+                st.success("¡Ejercicio completado! 🎉")
+        st.info("**Flujo máximo esperado:** 15 unidades")
 
     # ── 10. ÁRBOL EXPANSIÓN MÍNIMA ────────────────────────────────
     with st.expander("🌳 10. Árbol de Expansión Mínima"):
-        st.markdown("#### Ejercicio 10.1 — Red de cables")
+        st.markdown("### 📚 Teoría")
         st.markdown("""
-**Enunciado:** Conectar 5 ciudades con cable de fibra óptica minimizando el total de cable.
+El **Árbol de Expansión Mínima (MST)** conecta todos los nodos de un grafo no dirigido
+con el **menor costo total posible**, sin formar ciclos.
 
-**Distancias disponibles (km):**
+**Algoritmo de Kruskal:**
+1. Ordenar todas las aristas por peso ascendente
+2. Agregar la arista de menor peso que no forme un ciclo
+3. Repetir hasta tener n-1 aristas (n = número de nodos)
 
-| Ciudad 1 | Ciudad 2 | Distancia |
-|----------|----------|-----------|
+**Algoritmo de Prim:**
+1. Iniciar con cualquier nodo
+2. Agregar siempre la arista de menor peso que conecte un nodo nuevo
+3. Repetir hasta incluir todos los nodos
+
+Ambos garantizan el MST óptimo.
+        """)
+        st.markdown("### 🏋️ Ejercicio guiado")
+        st.markdown("""
+**Problema:** Conectar 5 ciudades con fibra óptica minimizando el cable total.
+
+| Ciudad 1 | Ciudad 2 | Km |
+|----------|----------|----|
 | A | B | 4 |
 | A | C | 2 |
 | B | C | 1 |
@@ -1962,36 +2052,44 @@ s.a.
 | C | E | 10 |
 | D | E | 2 |
         """)
-        st.markdown("**📥 Ingresa en Análisis de Redes → Árbol Expansión:**")
-        st.success("✅ Árbol mínimo: A-C=2, B-C=1, D-E=2, B-D=5 | Costo total = 10 km")
-
-        st.markdown("---")
-        st.markdown("#### Ejercicio 10.2 — Red eléctrica")
-        st.markdown("""
-**Enunciado:** Diseñar una red eléctrica que conecte 6 subestaciones con mínimo cable.
-
-**Conexiones posibles (km):**
-
-| Desde | Hasta | Costo |
-|-------|-------|-------|
-| A | B | 7 |
-| A | C | 9 |
-| B | C | 10 |
-| B | D | 15 |
-| C | D | 11 |
-| C | E | 6 |
-| D | E | 9 |
-| D | F | 11 |
-| E | F | 8 |
-        """)
-        st.markdown("**📥 Ingresa en Análisis de Redes → Árbol Expansión:**")
-        st.success("✅ Costo mínimo total = 41 km")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📥 Cargar en Árbol Expansión", key="man_mst1"):
+                st.session_state.network_example = {
+                    'type': 'mst',
+                    'nodes': ['A','B','C','D','E'],
+                    'edges': [('A','B',4),('A','C',2),('B','C',1),
+                              ('B','D',5),('C','D',8),('C','E',10),('D','E',2)],
+                    'description': "Ejercicio Manual"
+                }
+                st.success("✅ Cargado. Ve a 🌐 Análisis de Redes → Árbol Expansión")
+        with col2:
+            if st.button("✅ Marcar completado", key="man_mst1_done"):
+                st.session_state.manual_completados.add("arbol1")
+                st.success("¡Ejercicio completado! 🎉")
+        st.info("**Costo mínimo esperado:** 10 km | Aristas: A-C=2, B-C=1, D-E=2, B-D=5")
 
     # ── 11. PERT-CPM ──────────────────────────────────────────────
     with st.expander("⏱️ 11. PERT-CPM"):
-        st.markdown("#### Ejercicio 11.1 — Proyecto de construcción")
+        st.markdown("### 📚 Teoría")
         st.markdown("""
-**Enunciado:** Determinar la duración mínima y ruta crítica del siguiente proyecto.
+**PERT** (Program Evaluation and Review Technique) y **CPM** (Critical Path Method)
+son técnicas para planificar y controlar proyectos.
+
+**Conceptos clave:**
+- **Ruta crítica:** Secuencia de actividades que determina la duración mínima del proyecto.
+  Cualquier retraso en una actividad crítica retrasa todo el proyecto.
+- **Holgura (float):** Tiempo que puede retrasarse una actividad sin afectar la duración total.
+  Las actividades críticas tienen holgura = 0.
+- **ES/EF:** Inicio/Fin más temprano de cada actividad
+- **LS/LF:** Inicio/Fin más tardío sin retrasar el proyecto
+
+**Diferencia PERT vs CPM:** PERT usa 3 estimaciones de tiempo (optimista, más probable, pesimista);
+CPM usa tiempo determinístico.
+        """)
+        st.markdown("### 🏋️ Ejercicio guiado")
+        st.markdown("""
+**Proyecto de construcción con 6 actividades:**
 
 | Actividad | Duración | Predecesores |
 |-----------|----------|--------------|
@@ -2001,30 +2099,42 @@ s.a.
 | D | 5 días | A |
 | E | 3 días | B, C |
 | F | 2 días | D, E |
+
+**¿Cuál es la duración mínima del proyecto y la ruta crítica?**
         """)
-        st.markdown("**📥 Ingresa en Análisis de Redes → PERT-CPM:**")
-        st.success("✅ Duración = 10 días | Ruta crítica: A → D → F")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📥 Cargar en PERT-CPM", key="man_pt1"):
+                st.session_state.pert_example = [
+                    {'id':'A','duration':3,'predecessors':[]},
+                    {'id':'B','duration':4,'predecessors':[]},
+                    {'id':'C','duration':2,'predecessors':['A']},
+                    {'id':'D','duration':5,'predecessors':['A']},
+                    {'id':'E','duration':3,'predecessors':['B','C']},
+                    {'id':'F','duration':2,'predecessors':['D','E']},
+                ]
+                st.success("✅ Cargado. Ve a 🌐 Análisis de Redes → PERT-CPM")
+        with col2:
+            if st.button("✅ Marcar completado", key="man_pt1_done"):
+                st.session_state.manual_completados.add("pert1")
+                st.success("¡Ejercicio completado! 🎉")
+        st.info("**Duración = 10 días | Ruta crítica: A → D → F**")
 
-        st.markdown("---")
-        st.markdown("#### Ejercicio 11.2 — Desarrollo de software")
-        st.markdown("""
-**Enunciado:** Planificar el desarrollo de un sistema con las siguientes fases.
+    # ── REFERENCIAS ───────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("### 📚 Referencias Bibliográficas")
+    st.markdown("""
+1. **Taha, H. A.** (2017). *Operations Research: An Introduction* (10th ed.). Pearson Education.
+   — Base teórica de Simplex, Transporte, Asignación, Redes y PERT-CPM.
 
-| Actividad | Duración | Predecesores |
-|-----------|----------|--------------|
-| A — Análisis | 5 días | — |
-| B — Diseño | 7 días | A |
-| C — Codificación | 10 días | B |
-| D — Pruebas | 6 días | C |
-| E — Documentación | 4 días | B |
-| F — Despliegue | 2 días | D, E |
-        """)
-        st.markdown("**📥 Ingresa en Análisis de Redes → PERT-CPM:**")
-        st.success("✅ Duración = 30 días | Ruta crítica: A → B → C → D → F")
+2. **Hillier, F. S., & Lieberman, G. J.** (2015). *Introduction to Operations Research* (10th ed.). McGraw-Hill.
+   — Fundamentos de programación lineal, entera y análisis de sensibilidad.
 
+3. **Winston, W. L.** (2004). *Operations Research: Applications and Algorithms* (4th ed.). Thomson Brooks/Cole.
+   — Algoritmos de redes, flujo máximo, camino más corto y árbol de expansión mínima.
+    """)
     st.markdown("---")
     st.markdown(
-        "<div style='text-align:center; color:gray;'>Manual de Ejercicios · "
-        "Herramienta de Investigación de Operaciones · UAS 2026</div>",
+        "<div style='text-align:center; color:gray;'>Kit Práctico de Investigación de Operaciones · UAS 2026 · Cristóbal Lemus</div>",
         unsafe_allow_html=True
     )
