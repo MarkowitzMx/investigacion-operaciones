@@ -1567,3 +1567,464 @@ def show_history():
         st.session_state.history = []
         st.success("✅ Limpiado")
         st.rerun()
+
+
+def show_manual():
+    st.markdown("## 📖 Manual de Ejercicios")
+    st.markdown("Bienvenido al manual práctico de la **Herramienta de Investigación de Operaciones**. Cada sección contiene 2 ejercicios con datos listos para ingresar y la solución esperada para verificar tu resultado.")
+    st.markdown("---")
+
+    # ── NAVEGACIÓN RÁPIDA ─────────────────────────────────────────
+    st.markdown("### 🗺️ Navegación Rápida")
+    st.info("Selecciona un tema del menú lateral → ingresa los datos del ejercicio → resuelve → verifica con la solución esperada.")
+    st.markdown("---")
+
+    # ── 1. SIMPLEX ────────────────────────────────────────────────
+    with st.expander("📈 1. Programación Lineal — Método Simplex"):
+        st.markdown("#### Ejercicio 1.1 — Producción de muebles")
+        st.markdown("""
+**Enunciado:** Una fábrica produce sillas y mesas. Cada silla genera $5 de utilidad y cada mesa $8.
+Se dispone de 16 horas de carpintería y 12 horas de pintura.
+
+| Recurso | Silla | Mesa | Disponible |
+|---------|-------|------|------------|
+| Carpintería | 2 | 4 | 16 hrs |
+| Pintura | 3 | 2 | 12 hrs |
+
+**¿Cuántas sillas y mesas producir para maximizar la utilidad?**
+        """)
+        st.markdown("**📥 Ingresa en Programación Lineal → Método Simplex:**")
+        st.code("""
+Maximizar Z = 5x1 + 8x2
+s.a.
+  2x1 + 4x2 <= 16
+  3x1 + 2x2 <= 12
+  x1, x2 >= 0
+        """)
+        st.success("✅ Solución esperada: x1 = 2, x2 = 3, Z = 34")
+
+        st.markdown("---")
+        st.markdown("#### Ejercicio 1.2 — Mezcla de productos")
+        st.markdown("""
+**Enunciado:** Una empresa produce dos productos A y B con utilidades de $3 y $5 respectivamente.
+Tiene restricciones de máquina, mano de obra y demanda.
+
+| Recurso | A | B | Disponible |
+|---------|---|---|------------|
+| Máquina | 2 | 1 | 20 hrs |
+| Mano de obra | 1 | 2 | 16 hrs |
+| Demanda A | 1 | 0 | 8 uds |
+        """)
+        st.markdown("**📥 Ingresa en Programación Lineal → Método Simplex:**")
+        st.code("""
+Maximizar Z = 3x1 + 5x2
+s.a.
+  2x1 + 1x2 <= 20
+  1x1 + 2x2 <= 16
+  1x1 + 0x2 <= 8
+  x1, x2 >= 0
+        """)
+        st.success("✅ Solución esperada: x1 = 8, x2 = 4, Z = 44")
+
+    # ── 2. GRÁFICO ────────────────────────────────────────────────
+    with st.expander("📈 2. Programación Lineal — Método Gráfico"):
+        st.markdown("#### Ejercicio 2.1 — Dieta económica")
+        st.markdown("""
+**Enunciado:** Minimizar el costo de una dieta con 2 alimentos.
+Cada unidad de A cuesta $2 y de B cuesta $3.
+Se requiere al menos 6 unidades de proteína y 8 de carbohidratos.
+
+| Nutriente | A | B | Mínimo |
+|-----------|---|---|--------|
+| Proteína | 1 | 2 | 6 |
+| Carbohidratos | 4 | 2 | 8 |
+        """)
+        st.markdown("**📥 Ingresa en Programación Lineal → Método Gráfico:**")
+        st.code("""
+Minimizar Z = 2x1 + 3x2
+s.a.
+  1x1 + 2x2 >= 6
+  4x1 + 2x2 >= 8
+  x1, x2 >= 0
+        """)
+        st.success("✅ Solución esperada: x1 = 1, x2 = 2.5, Z = 9.5")
+
+        st.markdown("---")
+        st.markdown("#### Ejercicio 2.2 — Inversión en proyectos")
+        st.markdown("""
+**Enunciado:** Maximizar el retorno de inversión en dos proyectos.
+El proyecto A genera $4 y el B genera $5 por unidad invertida.
+
+| Restricción | A | B | Límite |
+|-------------|---|---|--------|
+| Capital | 6 | 4 | 24 |
+| Tiempo | 1 | 2 | 6 |
+        """)
+        st.markdown("**📥 Ingresa en Programación Lineal → Método Gráfico:**")
+        st.code("""
+Maximizar Z = 4x1 + 5x2
+s.a.
+  6x1 + 4x2 <= 24
+  1x1 + 2x2 <= 6
+  x1, x2 >= 0
+        """)
+        st.success("✅ Solución esperada: x1 = 3, x2 = 1.5, Z = 19.5")
+
+    # ── 3. DOS FASES ──────────────────────────────────────────────
+    with st.expander("📈 3. Programación Lineal — Método de las Dos Fases"):
+        st.markdown("#### Ejercicio 3.1 — Minimización con >= ")
+        st.markdown("""
+**Enunciado:** Una empresa quiere minimizar costos de producción de dos productos.
+Debe cumplir cuotas mínimas de producción.
+
+| Restricción | x1 | x2 | Mínimo |
+|-------------|----|----|--------|
+| Cuota 1 | 2 | 3 | 36 |
+| Cuota 2 | 3 | 6 | 60 |
+
+Costo: $2000 por x1 y $500 por x2.
+        """)
+        st.markdown("**📥 Ingresa en Programación Lineal → Dos Fases:**")
+        st.code("""
+Minimizar Z = 2000x1 + 500x2
+s.a.
+  2x1 + 3x2 >= 36
+  3x1 + 6x2 >= 60
+  x1, x2 >= 0
+        """)
+        st.success("✅ Solución esperada: x1 = 12, x2 = 4, Z = 26,000")
+
+        st.markdown("---")
+        st.markdown("#### Ejercicio 3.2 — Mezcla con restricción de igualdad")
+        st.markdown("""
+**Enunciado:** Minimizar el costo de mezcla que debe contener exactamente 100 litros.
+Se dispone de dos componentes con diferentes costos y concentraciones.
+
+| Restricción | x1 | x2 | Valor |
+|-------------|----|----|-------|
+| Total litros | 1 | 1 | = 100 |
+| Concentración mín | 3 | 1 | >= 150 |
+        """)
+        st.markdown("**📥 Ingresa en Programación Lineal → Dos Fases:**")
+        st.code("""
+Minimizar Z = 4x1 + 6x2
+s.a.
+  1x1 + 1x2  =  100
+  3x1 + 1x2 >= 150
+  x1, x2 >= 0
+        """)
+        st.success("✅ Solución esperada: x1 = 25, x2 = 75, Z = 550")
+
+    # ── 4. DUALIDAD ───────────────────────────────────────────────
+    with st.expander("🔄 4. Dualidad y Sensibilidad"):
+        st.markdown("#### Ejercicio 4.1 — Problema Dual")
+        st.markdown("""
+**Enunciado:** Resuelve el siguiente problema y genera su dual desde el módulo de Dualidad.
+
+        """)
+        st.markdown("**📥 Primero resuelve en Programación Lineal → Simplex:**")
+        st.code("""
+Maximizar Z = 5x1 + 4x2
+s.a.
+  6x1 + 4x2 <= 24
+  1x1 + 2x2 <= 6
+  x1, x2 >= 0
+        """)
+        st.markdown("**Luego ve a 🔄 Dualidad y Sensibilidad → Análisis Dual**")
+        st.success("✅ Dual: Minimizar W = 24y1 + 6y2  |  Óptimo dual = 21")
+
+        st.markdown("---")
+        st.markdown("#### Ejercicio 4.2 — Análisis de Sensibilidad")
+        st.markdown("""
+**Enunciado:** Resuelve el problema de producción de muebles y analiza cuánto puede cambiar el coeficiente de x1 sin cambiar la solución óptima.
+        """)
+        st.markdown("**📥 Resuelve en Programación Lineal → Simplex:**")
+        st.code("""
+Maximizar Z = 3x1 + 5x2
+s.a.
+  2x1 + 1x2 <= 20
+  1x1 + 2x2 <= 16
+  x1, x2 >= 0
+        """)
+        st.markdown("**Luego ve a 🔄 Dualidad → Sensibilidad**")
+        st.success("✅ Solución base: x1=8, x2=4, Z=44  |  Analiza rangos de c1 y c2")
+
+    # ── 5. PROGRAMACIÓN ENTERA ────────────────────────────────────
+    with st.expander("🔢 5. Programación Entera"):
+        st.markdown("#### Ejercicio 5.1 — Branch and Bound")
+        st.markdown("""
+**Enunciado:** Una empresa selecciona proyectos enteros (no fracciones).
+Maximizar utilidad sujeto a restricciones de presupuesto y personal.
+
+| Recurso | x1 | x2 | Disponible |
+|---------|----|----|------------|
+| Presupuesto | 2 | 4 | 16 |
+| Personal | 3 | 2 | 12 |
+        """)
+        st.markdown("**📥 Ingresa en Programación Entera → Branch and Bound:**")
+        st.code("""
+Maximizar Z = 5x1 + 8x2
+s.a.
+  2x1 + 4x2 <= 16
+  3x1 + 2x2 <= 12
+  x1, x2 >= 0 enteras
+        """)
+        st.success("✅ Solución esperada: x1 = 2, x2 = 3, Z = 34")
+
+        st.markdown("---")
+        st.markdown("#### Ejercicio 5.2 — Problema de la Mochila")
+        st.markdown("""
+**Enunciado:** Selecciona objetos para maximizar el valor total sin exceder capacidad de 50 kg.
+
+| Objeto | Valor | Peso |
+|--------|-------|------|
+| 1 | 60 | 10 |
+| 2 | 100 | 20 |
+| 3 | 120 | 30 |
+| 4 | 80 | 15 |
+| 5 | 90 | 25 |
+        """)
+        st.markdown("**📥 Ingresa en Programación Entera → Problema de la Mochila:**")
+        st.success("✅ Solución esperada: objetos 1,2,4 → Valor = 240, Peso = 45")
+
+    # ── 6. TRANSPORTE ─────────────────────────────────────────────
+    with st.expander("🚚 6. Problema de Transporte"):
+        st.markdown("#### Ejercicio 6.1 — Distribución 3×3")
+        st.markdown("""
+**Enunciado:** Minimizar el costo de distribuir productos desde 3 almacenes a 3 tiendas.
+
+**Oferta:** O1=120, O2=80, O3=80  
+**Demanda:** D1=150, D2=70, D3=60
+
+**Matriz de costos:**
+
+| | D1 | D2 | D3 |
+|-|----|----|----|
+| O1 | 2 | 3 | 1 |
+| O2 | 5 | 4 | 8 |
+| O3 | 5 | 6 | 8 |
+        """)
+        st.markdown("**📥 Ingresa en Análisis de Redes → Transporte:**")
+        st.success("✅ Costo mínimo esperado: $710 (Esquina Noroeste) o menos con Vogel")
+
+        st.markdown("---")
+        st.markdown("#### Ejercicio 6.2 — Red de distribución 2×3")
+        st.markdown("""
+**Enunciado:** Dos fábricas abastecen a tres tiendas.
+
+**Oferta:** F1=200, F2=300  
+**Demanda:** T1=150, T2=200, T3=150
+
+**Costos de envío:**
+
+| | T1 | T2 | T3 |
+|-|----|----|----|
+| F1 | 4 | 8 | 8 |
+| F2 | 16 | 24 | 16 |
+        """)
+        st.markdown("**📥 Ingresa en Análisis de Redes → Transporte:**")
+        st.success("✅ Costo mínimo esperado: $3,200")
+
+    # ── 7. ASIGNACIÓN ─────────────────────────────────────────────
+    with st.expander("👥 7. Problema de Asignación"):
+        st.markdown("#### Ejercicio 7.1 — Minimizar tiempo")
+        st.markdown("""
+**Enunciado:** Asignar 4 trabajadores a 4 tareas minimizando el tiempo total.
+
+**Matriz de tiempos (horas):**
+
+| | T1 | T2 | T3 | T4 |
+|-|----|----|----|-----|
+| W1 | 9 | 2 | 7 | 8 |
+| W2 | 6 | 4 | 3 | 7 |
+| W3 | 5 | 8 | 1 | 8 |
+| W4 | 7 | 6 | 9 | 4 |
+        """)
+        st.markdown("**📥 Ingresa en Análisis de Redes → Asignación → Minimizar:**")
+        st.success("✅ Asignación óptima: W1→T2, W2→T3, W3→T3, W4→T4 | Tiempo = 13")
+
+        st.markdown("---")
+        st.markdown("#### Ejercicio 7.2 — Maximizar beneficio")
+        st.markdown("""
+**Enunciado:** Asignar 3 vendedores a 3 regiones maximizando ventas totales.
+
+**Matriz de ventas ($000):**
+
+| | R1 | R2 | R3 |
+|-|----|----|----|
+| V1 | 10 | 5 | 8 |
+| V2 | 6 | 7 | 9 |
+| V3 | 4 | 8 | 6 |
+        """)
+        st.markdown("**📥 Ingresa en Análisis de Redes → Asignación → Maximizar:**")
+        st.success("✅ Asignación óptima: V1→R1, V2→R3, V3→R2 | Ventas = $27,000")
+
+    # ── 8. CAMINO MÁS CORTO ───────────────────────────────────────
+    with st.expander("🗺️ 8. Camino más Corto"):
+        st.markdown("#### Ejercicio 8.1 — Red de ciudades")
+        st.markdown("""
+**Enunciado:** Encontrar la ruta más corta entre la ciudad A y la ciudad D.
+
+**Conexiones:**
+
+| Desde | Hasta | Distancia (km) |
+|-------|-------|----------------|
+| A | B | 4 |
+| A | C | 2 |
+| C | B | 1 |
+| B | D | 3 |
+| C | D | 7 |
+        """)
+        st.markdown("**📥 Ingresa en Análisis de Redes → Camino más Corto:**")
+        st.markdown("Origen: **A** | Destino: **D**")
+        st.success("✅ Ruta óptima: A → C → B → D | Distancia = 6 km")
+
+        st.markdown("---")
+        st.markdown("#### Ejercicio 8.2 — Red de distribución")
+        st.markdown("""
+**Enunciado:** Encontrar la ruta de menor costo desde S hasta T.
+
+**Conexiones:**
+
+| Desde | Hasta | Costo |
+|-------|-------|-------|
+| S | A | 10 |
+| S | B | 8 |
+| A | C | 5 |
+| B | C | 3 |
+| B | T | 7 |
+| C | T | 6 |
+| A | T | 15 |
+        """)
+        st.markdown("**📥 Ingresa en Análisis de Redes → Camino más Corto:**")
+        st.markdown("Origen: **S** | Destino: **T**")
+        st.success("✅ Ruta óptima: S → B → C → T | Costo = 17")
+
+    # ── 9. FLUJO MÁXIMO ───────────────────────────────────────────
+    with st.expander("🌊 9. Flujo Máximo"):
+        st.markdown("#### Ejercicio 9.1 — Red de tuberías")
+        st.markdown("""
+**Enunciado:** Determinar el flujo máximo de agua desde A (fuente) hasta E (sumidero).
+
+**Red con capacidades:**
+
+| Desde | Hasta | Capacidad |
+|-------|-------|-----------|
+| A | B | 10 |
+| A | C | 8 |
+| B | D | 5 |
+| B | C | 3 |
+| C | D | 7 |
+| C | E | 6 |
+| D | E | 9 |
+        """)
+        st.markdown("**📥 Ingresa en Análisis de Redes → Flujo Máximo:**")
+        st.markdown("Fuente: **A** | Sumidero: **E**")
+        st.success("✅ Flujo máximo = 15 unidades")
+
+        st.markdown("---")
+        st.markdown("#### Ejercicio 9.2 — Red de comunicaciones")
+        st.markdown("""
+**Enunciado:** Maximizar el flujo de datos desde S hasta T en una red de comunicaciones.
+
+**Red con capacidades (Mbps):**
+
+| Desde | Hasta | Capacidad |
+|-------|-------|-----------|
+| S | A | 15 |
+| S | B | 10 |
+| A | C | 12 |
+| A | D | 8 |
+| B | C | 5 |
+| B | D | 10 |
+| C | T | 15 |
+| D | T | 12 |
+        """)
+        st.markdown("**📥 Ingresa en Análisis de Redes → Flujo Máximo:**")
+        st.markdown("Fuente: **S** | Sumidero: **T**")
+        st.success("✅ Flujo máximo = 25 Mbps")
+
+    # ── 10. ÁRBOL EXPANSIÓN MÍNIMA ────────────────────────────────
+    with st.expander("🌳 10. Árbol de Expansión Mínima"):
+        st.markdown("#### Ejercicio 10.1 — Red de cables")
+        st.markdown("""
+**Enunciado:** Conectar 5 ciudades con cable de fibra óptica minimizando el total de cable.
+
+**Distancias disponibles (km):**
+
+| Ciudad 1 | Ciudad 2 | Distancia |
+|----------|----------|-----------|
+| A | B | 4 |
+| A | C | 2 |
+| B | C | 1 |
+| B | D | 5 |
+| C | D | 8 |
+| C | E | 10 |
+| D | E | 2 |
+        """)
+        st.markdown("**📥 Ingresa en Análisis de Redes → Árbol Expansión:**")
+        st.success("✅ Árbol mínimo: A-C=2, B-C=1, D-E=2, B-D=5 | Costo total = 10 km")
+
+        st.markdown("---")
+        st.markdown("#### Ejercicio 10.2 — Red eléctrica")
+        st.markdown("""
+**Enunciado:** Diseñar una red eléctrica que conecte 6 subestaciones con mínimo cable.
+
+**Conexiones posibles (km):**
+
+| Desde | Hasta | Costo |
+|-------|-------|-------|
+| A | B | 7 |
+| A | C | 9 |
+| B | C | 10 |
+| B | D | 15 |
+| C | D | 11 |
+| C | E | 6 |
+| D | E | 9 |
+| D | F | 11 |
+| E | F | 8 |
+        """)
+        st.markdown("**📥 Ingresa en Análisis de Redes → Árbol Expansión:**")
+        st.success("✅ Costo mínimo total = 41 km")
+
+    # ── 11. PERT-CPM ──────────────────────────────────────────────
+    with st.expander("⏱️ 11. PERT-CPM"):
+        st.markdown("#### Ejercicio 11.1 — Proyecto de construcción")
+        st.markdown("""
+**Enunciado:** Determinar la duración mínima y ruta crítica del siguiente proyecto.
+
+| Actividad | Duración | Predecesores |
+|-----------|----------|--------------|
+| A | 3 días | — |
+| B | 4 días | — |
+| C | 2 días | A |
+| D | 5 días | A |
+| E | 3 días | B, C |
+| F | 2 días | D, E |
+        """)
+        st.markdown("**📥 Ingresa en Análisis de Redes → PERT-CPM:**")
+        st.success("✅ Duración = 10 días | Ruta crítica: A → D → F")
+
+        st.markdown("---")
+        st.markdown("#### Ejercicio 11.2 — Desarrollo de software")
+        st.markdown("""
+**Enunciado:** Planificar el desarrollo de un sistema con las siguientes fases.
+
+| Actividad | Duración | Predecesores |
+|-----------|----------|--------------|
+| A — Análisis | 5 días | — |
+| B — Diseño | 7 días | A |
+| C — Codificación | 10 días | B |
+| D — Pruebas | 6 días | C |
+| E — Documentación | 4 días | B |
+| F — Despliegue | 2 días | D, E |
+        """)
+        st.markdown("**📥 Ingresa en Análisis de Redes → PERT-CPM:**")
+        st.success("✅ Duración = 30 días | Ruta crítica: A → B → C → D → F")
+
+    st.markdown("---")
+    st.markdown(
+        "<div style='text-align:center; color:gray;'>Manual de Ejercicios · "
+        "Herramienta de Investigación de Operaciones · UAS 2026</div>",
+        unsafe_allow_html=True
+    )
