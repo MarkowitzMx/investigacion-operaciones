@@ -353,9 +353,10 @@ def main():
         show_examples_library()
     elif module == "📊 Comparar Métodos":
         show_method_comparison()
-    elif module == "💾 Historial",
-            "📖 Manual de Ejercicios":
+    elif module == "💾 Historial":
         show_history()
+    elif module == "📖 Manual de Ejercicios":
+        show_manual()
  
  
 if __name__ == "__main__":
