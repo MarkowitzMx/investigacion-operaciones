@@ -21,7 +21,7 @@ from modules.duality_sensitivity import DualityAnalysis, SensitivityAnalysis
 from modules.integer_programming import IntegerProgramming
 from app_modules import (show_duality_sensitivity, show_integer_programming,
                          show_network_analysis, show_examples_library,
-                         show_method_comparison, show_history)
+                         show_method_comparison, show_history, show_manual)
  
 # Configuración de la página
 st.set_page_config(
@@ -320,7 +320,8 @@ def main():
             "🌐 Análisis de Redes",
             "📚 Biblioteca de Ejemplos",
             "📊 Comparar Métodos",
-            "💾 Historial"
+            "💾 Historial",
+            "📖 Manual de Ejercicios"
         ])
         st.markdown("---")
         st.markdown("### ⚙️ Configuración")
@@ -352,7 +353,8 @@ def main():
         show_examples_library()
     elif module == "📊 Comparar Métodos":
         show_method_comparison()
-    elif module == "💾 Historial":
+    elif module == "💾 Historial",
+            "📖 Manual de Ejercicios":
         show_history()
  
  
